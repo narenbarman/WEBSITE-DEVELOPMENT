@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Add Purchase Bill</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        .product-row {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .product-row .form-group {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .product-row label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .product-row input, .product-row select {
+            width: 120px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .remove-product {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .add-product-row {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .bill-summary {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .summary-total {
+            font-weight: bold;
+            font-size: 1.2em;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+        </nav>
+    </header>
+    <main>
+        <form method="POST" style="max-width: 800px; margin: 0 auto;" id="purchaseForm">
+            <a href="{{ url_for('purchase_register') }}" class="back-btn" style="text-decoration: none; color: #666; font-size: 18px; margin-bottom: 10px; display: inline-block;">← Back to Purchase Register</a>
+            <h2>Add Purchase Bill</h2>
+
+            <div class="form-group">
+                <label for="supplier_name">Supplier Name:</label>
+                <input type="text" id="supplier_name" name="supplier_name" list="suppliers_list" placeholder="Type or select supplier name" style="width: 100%; padding: 8px; font-size: 16px;">
+                <datalist id="suppliers_list">
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label for="bill_number">Bill Number:</label>
+                <input type="text" id="bill_number" name="bill_number" placeholder="Optional">
+            </div>
+
+            <div class="form-group">
+                <label for="purchase_date">Purchase Date:</label>
+                <input type="date" id="purchase_date" name="purchase_date" required>
+            </div>
+
+            <h3>Products</h3>
+            <div id="productsContainer">
+                <div class="product-row">
+                    <div class="form-group">
+                        <label>Product:</label>
+                        <select name="product_id[]" required onchange="updateProductDetails(this)">
+                            <option value="">Select Product</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.price }}" data-mrp="{{ product.price }}">{{ product.name }} ({{ product.sku if product.sku else 'No SKU' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>MRP (₹):</label>
+                        <input type="number" name="mrp[]" step="0.01" min="0" class="mrp" onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>QTY:</label>
+                        <input type="number" name="quantity[]" min="1" required onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Rate (₹):</label>
+                        <input type="number" name="rate[]" step="0.01" min="0" required onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Discount (%):</label>
+                        <input type="number" name="discount_percent[]" step="0.01" min="0" max="100" value="0" onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Discount Amt (₹):</label>
+                        <input type="number" step="0.01" readonly class="discount-amount">
+                    </div>
+                    <div class="form-group">
+                        <label>Taxable Amt (₹):</label>
+                        <input type="number" step="0.01" readonly class="taxable-amount">
+                    </div>
+                    <div class="form-group">
+                        <label>GST (%):</label>
+                        <input type="number" name="gst_rate[]" step="0.01" min="0" max="100" value="0" onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (₹):</label>
+                        <input type="number" step="0.01" readonly class="row-total">
+                    </div>
+                    <button type="button" class="remove-product" onclick="removeProductRow(this)">Remove</button>
+                </div>
+            </div>
+
+            <button type="button" class="add-product-row" onclick="addProductRow()">+ Add Another Product</button>
+
+            <div class="bill-summary">
+                <h3>Bill Summary</h3>
+                <div class="summary-row">
+                    <span>Total Amount (before GST):</span>
+                    <span id="totalAmount">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Total GST:</span>
+                    <span id="totalGST">₹0.00</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Grand Total:</span>
+                    <span id="grandTotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <label for="payment_made">Payment Made (₹):</label>
+                    <input type="number" id="payment_made" name="payment_made" step="0.01" min="0" value="0" onchange="calculateBalance()">
+                </div>
+                <div class="summary-row">
+                    <span>Balance:</span>
+                    <span id="balance">₹0.00</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes (optional):</label>
+                <textarea id="notes" name="notes" placeholder="Additional notes about the purchase bill"></textarea>
+            </div>
+
+            <button type="submit">Add Purchase Bill</button>
+        </form>
+    </main>
+
+    <script>
+        function updateProductDetails(selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+            const mrp = selectedOption.getAttribute('data-mrp');
+            const row = selectElement.closest('.product-row');
+            const rateInput = row.querySelector('input[name="rate[]"]');
+            const mrpInput = row.querySelector('.mrp');
+            if (price && rateInput) {
+                rateInput.value = parseFloat(price).toFixed(2);
+                mrpInput.value = parseFloat(mrp).toFixed(2);
+                calculateRow(rateInput);
+            }
+        }
+
+        function calculateRow(element) {
+            const row = element.closest('.product-row');
+            const quantity = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+            const rate = parseFloat(row.querySelector('input[name="rate[]"]').value) || 0;
+            const discountPercent = parseFloat(row.querySelector('input[name="discount_percent[]"]').value) || 0;
+            const gstRate = parseFloat(row.querySelector('input[name="gst_rate[]"]').value) || 0;
+
+            const subtotal = quantity * rate;
+            const discountAmount = subtotal * (discountPercent / 100);
+            const taxableAmount = subtotal - discountAmount;
+            const gstAmount = taxableAmount * (gstRate / 100);
+            const total = taxableAmount + gstAmount;
+
+            row.querySelector('.discount-amount').value = discountAmount.toFixed(2);
+            row.querySelector('.taxable-amount').value = taxableAmount.toFixed(2);
+            row.querySelector('.row-total').value = total.toFixed(2);
+
+            calculateBillSummary();
+        }
+
+        function calculateBillSummary() {
+            let totalAmount = 0;
+            let totalGST = 0;
+
+            document.querySelectorAll('.product-row').forEach(row => {
+                totalAmount += parseFloat(row.querySelector('.taxable-amount').value) || 0;
+                totalGST += parseFloat(row.querySelector('.row-total').value - row.querySelector('.taxable-amount').value) || 0;
+            });
+
+            const grandTotal = totalAmount + totalGST;
+            const paymentMade = parseFloat(document.getElementById('payment_made').value) || 0;
+            const balance = grandTotal - paymentMade;
+
+            document.getElementById('totalAmount').textContent = '₹' + totalAmount.toFixed(2);
+            document.getElementById('totalGST').textContent = '₹' + totalGST.toFixed(2);
+            document.getElementById('grandTotal').textContent = '₹' + grandTotal.toFixed(2);
+            document.getElementById('balance').textContent = '₹' + balance.toFixed(2);
+        }
+
+        function calculateBalance() {
+            const grandTotal = parseFloat(document.getElementById('grandTotal').textContent.replace('₹', '')) || 0;
+            const paymentMade = parseFloat(document.getElementById('payment_made').value) || 0;
+            const balance = grandTotal - paymentMade;
+            document.getElementById('balance').textContent = '₹' + balance.toFixed(2);
+        }
+
+        function addProductRow() {
+            const container = document.getElementById('productsContainer');
+            const firstRow = container.querySelector('.product-row');
+            const newRow = firstRow.cloneNode(true);
+
+            // Clear input values
+            newRow.querySelectorAll('input').forEach(input => {
+                if (input.type !== 'button') {
+                    input.value = '';
+                }
+            });
+            newRow.querySelector('select').selectedIndex = 0;
+
+            // Reset calculated fields
+            newRow.querySelector('.mrp').value = '0.00';
+            newRow.querySelector('.discount-amount').value = '0.00';
+            newRow.querySelector('.taxable-amount').value = '0.00';
+            newRow.querySelector('.row-total').value = '0.00';
+
+            container.appendChild(newRow);
+        }
+
+        function removeProductRow(button) {
+            const container = document.getElementById('productsContainer');
+            if (container.children.length > 1) {
+                button.closest('.product-row').remove();
+                calculateBillSummary();
+            } else {
+                alert('At least one product is required.');
+            }
+        }
+
+        // Initialize calculations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateBillSummary();
+        });
+    </script>
+</body>
+</html>

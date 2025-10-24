@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Edit Product</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+        </nav>
+    </header>
+    <main>
+        <form method="POST" style="max-width: 600px; margin: 0 auto;">
+            <h2>Edit Product</h2>
+
+            <label for="name">Product Name:</label>
+            <input type="text" id="name" name="name" value="{{ product.name }}" required><br>
+
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" required>{{ product.description }}</textarea><br>
+
+            <label for="category">Category:</label>
+            <select id="category" name="category" required>
+                <option value="">Select Category</option>
+                <option value="electronics" {% if product.category == 'electronics' %}selected{% endif %}>Electronics</option>
+                <option value="clothing" {% if product.category == 'clothing' %}selected{% endif %}>Clothing</option>
+                <option value="home" {% if product.category == 'home' %}selected{% endif %}>Home & Garden</option>
+                <option value="sports" {% if product.category == 'sports' %}selected{% endif %}>Sports & Outdoors</option>
+                <option value="books" {% if product.category == 'books' %}selected{% endif %}>Books</option>
+                <option value="beauty" {% if product.category == 'beauty' %}selected{% endif %}>Beauty & Personal Care</option>
+                <option value="automotive" {% if product.category == 'automotive' %}selected{% endif %}>Automotive</option>
+                <option value="toys" {% if product.category == 'toys' %}selected{% endif %}>Toys & Games</option>
+                <option value="food" {% if product.category == 'food' %}selected{% endif %}>Food & Beverages</option>
+                <option value="other" {% if product.category == 'other' %}selected{% endif %}>Other</option>
+            </select><br>
+
+            <label for="brand">Brand:</label>
+            <input type="text" id="brand" name="brand" value="{{ product.brand }}"><br>
+
+            <label for="weight">Weight (kg):</label>
+            <input type="number" id="weight" name="weight" step="0.01" min="0" value="{{ product.weight }}"><br>
+
+            <label for="dimensions">Dimensions (L x W x H in cm):</label>
+            <input type="text" id="dimensions" name="dimensions" value="{{ product.dimensions }}"><br>
+
+            <label for="price">Price (₹):</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" value="{{ product.price }}" required><br>
+
+            <label for="stock_quantity">Stock Quantity:</label>
+            <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="{{ product.stock_quantity }}"><br>
+
+            <label for="sku">SKU (Stock Keeping Unit):</label>
+            <input type="text" id="sku" name="sku" value="{{ product.sku }}"><br>
+
+            <label for="image_url">Image URL:</label>
+            <input type="url" id="image_url" name="image_url" value="{{ product.image_url }}"><br>
+
+            <label for="tags">Tags (comma-separated):</label>
+            <input type="text" id="tags" name="tags" value="{{ product.tags }}"><br>
+
+            <button type="submit">Update Product</button>
+        </form>
+    </main>
+</body>
+</html>

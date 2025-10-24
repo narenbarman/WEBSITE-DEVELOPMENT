@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Your One-Stop Departmental Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1" fill="white" opacity="0.1"/><circle cx="60" cy="30" r="1.5" fill="white" opacity="0.1"/></svg>');
+            opacity: 0.1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .cta-button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Photo Gallery */
+        .gallery {
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .gallery h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .gallery-subtitle {
+            text-align: center;
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 60px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: 30px 20px 20px;
+        }
+
+        .gallery-overlay h3 {
+            margin: 0;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .gallery-overlay p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .stat-item p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        /* Footer */
+        footer {
+            background: #333;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #555;
+            padding-top: 20px;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero p {
+                font-size: 1.1em;
+            }
+
+            .features-grid,
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('cart') }}" style="background-color: #ffc107; color: black;">🛒 Cart{% if cart_count > 0 %} ({{ cart_count }}){% endif %}</a>
+                <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+                <a href="{{ url_for('logout') }}" style="background-color: #6c757d; color: white;">Logout</a>
+            {% else %}
+                <a href="{{ url_for('account') }}">👤 Account</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Welcome to Barman Store</h1>
+            <p>Your Premier Departmental Store - Quality Products, Exceptional Service</p>
+            <a href="{{ url_for('catalog') }}" class="cta-button">Shop Now</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <h2>Why Choose Barman Store?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">🏪</span>
+                <h3>Wide Variety</h3>
+                <p>From groceries to electronics, we offer everything you need under one roof with carefully curated selections.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">💎</span>
+                <h3>Quality Assurance</h3>
+                <p>Every product in our store undergoes rigorous quality checks to ensure you get only the best.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🚚</span>
+                <h3>Fast Delivery</h3>
+                <p>Quick and reliable delivery service to get your orders to your doorstep in the shortest time possible.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">💰</span>
+                <h3>Best Prices</h3>
+                <p>Competitive pricing with regular discounts and special offers to save you money on every purchase.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">👥</span>
+                <h3>Expert Staff</h3>
+                <p>Our knowledgeable team is always ready to help you find the perfect products and answer your questions.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔒</span>
+                <h3>Secure Shopping</h3>
+                <p>Safe and secure online shopping experience with multiple payment options and data protection.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Photo Gallery -->
+    <section class="gallery">
+        <h2>Store Gallery</h2>
+        <p class="gallery-subtitle">Take a virtual tour of our beautiful store and see what we offer</p>
+        <div class="gallery-grid">
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    📸 Store Front
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Modern Store Front</h3>
+                    <p>Welcome to our contemporary departmental store with easy access and parking facilities.</p>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    🛒 Product Aisles
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Organized Aisles</h3>
+                    <p>Well-organized product categories making shopping easy and enjoyable for our customers.</p>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    👨‍💼 Customer Service
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Friendly Staff</h3>
+                    <p>Our dedicated team providing excellent customer service and product recommendations.</p>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    🏪 Store Interior
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Spacious Interior</h3>
+                    <p>Comfortable shopping environment with ample space for browsing and selecting products.</p>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    📦 Fresh Produce
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Fresh Produce Section</h3>
+                    <p>Daily fresh fruits, vegetables, and groceries sourced from trusted local suppliers.</p>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-image">
+                    🛍️ Shopping Experience
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Premium Shopping</h3>
+                    <p>Experience the joy of shopping with our carefully selected range of quality products.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3>10,000+</h3>
+                <p>Happy Customers</p>
+            </div>
+            <div class="stat-item">
+                <h3>5,000+</h3>
+                <p>Products Available</p>
+            </div>
+            <div class="stat-item">
+                <h3>15+</h3>
+                <p>Years of Service</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Customer Support</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 40px; width: auto;">
+            </div>
+            <div class="footer-links">
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('catalog') }}">Products</a>
+                <a href="{{ url_for('account') }}">Account</a>
+                <a href="#contact">Contact Us</a>
+                <a href="#about">About Us</a>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Barman Store. All rights reserved. | Your One-Stop Departmental Store</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

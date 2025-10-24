@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Add Product</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+        </nav>
+    </header>
+    <main>
+        <form method="POST" style="max-width: 600px; margin: 0 auto;">
+            <a href="{{ url_for('products') }}" class="back-btn" style="text-decoration: none; color: #666; font-size: 18px; margin-bottom: 10px; display: inline-block;">← Back to Product Management</a>
+            <h2>Add New Product</h2>
+
+            <label for="name">Product Name:</label>
+            <input type="text" id="name" name="name" required><br>
+
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" required></textarea><br>
+
+            <label for="category">Category:</label>
+            <input type="text" id="category" name="category" list="categories_list" placeholder="Type or select category" style="width: 100%; padding: 8px; font-size: 16px;" required>
+            <datalist id="categories_list">
+                <option value="Electronics">
+                <option value="Clothing">
+                <option value="Home & Garden">
+                <option value="Sports & Outdoors">
+                <option value="Books">
+                <option value="Beauty & Personal Care">
+                <option value="Automotive">
+                <option value="Toys & Games">
+                <option value="Food & Beverages">
+                <option value="Other">
+            </datalist><br>
+
+            <label for="brand">Brand:</label>
+            <input type="text" id="brand" name="brand" placeholder="e.g., Apple, Nike, Samsung"><br>
+
+            <label for="weight">Weight:</label>
+            <input type="text" id="weight" name="weight" placeholder="e.g., 1.5 kg or 500 g"><br>
+
+            <label for="price">Price (₹):</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" required><br>
+
+            <label for="stock_quantity">Stock Quantity:</label>
+            <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="0"><br>
+
+            <label for="sku">SKU (Stock Keeping Unit):</label>
+            <input type="text" id="sku" name="sku" readonly placeholder="Auto-generated"><br>
+
+            <label for="image_url">Image URL:</label>
+            <input type="url" id="image_url" name="image_url" placeholder="https://example.com/image.jpg"><br>
+
+            <label for="tags">Tags (comma-separated):</label>
+            <input type="text" id="tags" name="tags" placeholder="e.g., new, featured, sale"><br>
+
+            <button type="submit">Add Product</button>
+        </form>
+    </main>
+
+    <script>
+        function generateSKU() {
+            const brand = document.getElementById('brand').value.trim().replace(/\s+/g, '').toUpperCase();
+            const name = document.getElementById('name').value.trim().replace(/\s+/g, '').toUpperCase();
+            const weight = document.getElementById('weight').value.trim();
+            const price = document.getElementById('price').value;
+
+            // Take first 5 chars of brand name
+            const brandPart = brand.substring(0, 5);
+
+            let suffix = '';
+            if (weight) {
+                // Extract numeric value from weight string and use as is
+                const weightMatch = weight.match(/(\d+(?:\.\d+)?)/);
+                if (weightMatch) {
+                    suffix = weightMatch[1];
+                }
+            }
+            if (!suffix && price && parseFloat(price) > 0) {
+                suffix = Math.round(parseFloat(price)).toString();
+            }
+
+            // Combine: first 5 chars of brand + item name + weight/MRP
+            const sku = (brandPart + name + suffix).toUpperCase();
+
+            document.getElementById('sku').value = sku;
+        }
+
+        // Generate SKU when relevant fields change
+        document.getElementById('brand').addEventListener('input', generateSKU);
+        document.getElementById('name').addEventListener('input', generateSKU);
+        document.getElementById('weight').addEventListener('input', generateSKU);
+        document.getElementById('price').addEventListener('input', generateSKU);
+    </script>
+</body>
+</html>
