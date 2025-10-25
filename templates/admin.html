@@ -314,12 +314,17 @@
                     <div class="action-card">
                         <h3>📄 View Bills</h3>
                         <p>Review all billing records</p>
-                        <a href="#">Coming Soon</a>
+                        <a href="{{ url_for('view_bills') }}">View Bills</a>
+                    </div>
+                    <div class="action-card">
+                        <h3>📦 View Orders</h3>
+                        <p>View and manage customer orders</p>
+                        <a href="{{ url_for('view_orders') }}">View Orders</a>
                     </div>
                     <div class="action-card">
                         <h3>➕ Create Bill</h3>
                         <p>Generate new bills</p>
-                        <a href="#">Coming Soon</a>
+                        <a href="{{ url_for('create_bill') }}">Create Bill</a>
                     </div>
                     <div class="action-card">
                         <h3>📊 Billing Reports</h3>

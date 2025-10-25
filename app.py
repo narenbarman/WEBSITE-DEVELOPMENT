@@ -554,17 +554,84 @@ def cart():
 @app.route('/checkout', methods=['POST'])
 @login_required
 def checkout():
-    # For now, just clear the cart and show success message
-    # In a real application, this would process payment, create order, etc.
-    if db:
-        try:
-            cart_ref = db.collection('carts').document(current_user.id)
-            cart_ref.set({'items': [], 'updated_at': firestore.SERVER_TIMESTAMP})
-            flash('Order placed successfully! Thank you for shopping with us.', 'success')
-        except Exception as e:
-            flash(f'Error processing checkout: {str(e)}', 'error')
-    else:
+    if not db:
         flash('Database not available.', 'error')
+        return redirect(url_for('cart'))
+
+    try:
+        # Get cart items
+        cart_ref = db.collection('carts').document(current_user.id)
+        cart_doc = cart_ref.get()
+
+        if not cart_doc.exists:
+            flash('Your cart is empty.', 'error')
+            return redirect(url_for('cart'))
+
+        cart_data = cart_doc.to_dict()
+        items = cart_data.get('items', [])
+
+        if not items:
+            flash('Your cart is empty.', 'error')
+            return redirect(url_for('cart'))
+
+        # Build order items with product details
+        order_items = []
+        total_amount = 0
+
+        for item in items:
+            product_ref = db.collection('products').document(item['product_id'])
+            product_doc = product_ref.get()
+
+            if product_doc.exists:
+                product_data = product_doc.to_dict()
+                item_total = product_data['price'] * item['quantity']
+                total_amount += item_total
+
+                order_items.append({
+                    'product_id': item['product_id'],
+                    'name': product_data.get('name', 'Unknown Product'),
+                    'description': product_data.get('description', ''),
+                    'price': product_data['price'],
+                    'quantity': item['quantity'],
+                    'subtotal': item_total,
+                    'image_url': product_data.get('image_url', '')
+                })
+
+        # Get user information
+        user_ref = db.collection('users').document(current_user.id)
+        user_doc = user_ref.get()
+        user_data = user_doc.to_dict() if user_doc.exists else {}
+
+        # Create order data
+        import uuid
+        order_id = str(uuid.uuid4())
+
+        order_data = {
+            'order_id': order_id,
+            'user_id': current_user.id,
+            'user_email': current_user.email,
+            'user_name': f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip(),
+            'user_phone': user_data.get('phone', ''),
+            'user_address': user_data.get('address', ''),
+            'items': order_items,
+            'total_amount': total_amount,
+            'status': 'pending',  # pending, processed, waiting_for_payment, bill_generated, delivered, closed
+            'order_date': firestore.SERVER_TIMESTAMP,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+
+        # Save order to database
+        db.collection('orders').document(order_id).set(order_data)
+
+        # Clear the cart
+        cart_ref.set({'items': [], 'updated_at': firestore.SERVER_TIMESTAMP})
+
+        flash(f'Order placed successfully! Your order ID is {order_id[:8].upper()}. Thank you for shopping with us.', 'success')
+
+    except Exception as e:
+        flash(f'Error processing checkout: {str(e)}', 'error')
+        return redirect(url_for('cart'))
+
     return redirect(url_for('catalog'))
 
 @app.route('/update_cart_quantity/<product_id>', methods=['POST'])
@@ -921,6 +988,179 @@ def delete_purchase(purchase_id):
         flash('Database not available.', 'error')
 
     return redirect(url_for('purchase_register'))
+
+@app.route('/view_orders')
+@login_required
+def view_orders():
+    orders = []
+
+    if db:
+        try:
+            # Fetch orders for the current user (or all orders if admin)
+            if current_user.is_admin():
+                # Admin can see all orders
+                orders_ref = db.collection('orders')
+                orders_docs = orders_ref.stream()
+            else:
+                # Regular users can only see their own orders
+                orders_ref = db.collection('orders').where('user_id', '==', current_user.id)
+                orders_docs = orders_ref.stream()
+
+            for order_doc in orders_docs:
+                order_data = order_doc.to_dict()
+                order_data['id'] = order_doc.id
+
+                # Format order date
+                if order_data.get('order_date'):
+                    if hasattr(order_data['order_date'], 'strftime'):
+                        order_data['date'] = order_data['order_date'].strftime('%Y-%m-%d %H:%M')
+                    else:
+                        order_data['date'] = str(order_data['order_date'])
+                else:
+                    order_data['date'] = 'N/A'
+
+                orders.append(order_data)
+
+            # Sort orders by date (newest first) since we can't use order_by in query
+            orders.sort(key=lambda x: x.get('order_date') or '', reverse=True)
+
+        except Exception as e:
+            print(f"Error fetching orders: {str(e)}")
+            flash("Error loading orders. Please try again.", 'error')
+
+    return render_template('view_orders.html', orders=orders)
+
+@app.route('/view_bills')
+@login_required
+def view_bills():
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    bills = []
+
+    if db:
+        try:
+            # Fetch all bills from orders collection
+            bills_ref = db.collection('orders')
+            bills_docs = bills_ref.stream()
+
+            for bill_doc in bills_docs:
+                bill_data = bill_doc.to_dict()
+                bill_data['id'] = bill_doc.id
+
+                # Format bill date
+                if bill_data.get('order_date'):
+                    if hasattr(bill_data['order_date'], 'strftime'):
+                        bill_data['date'] = bill_data['order_date'].strftime('%Y-%m-%d %H:%M')
+                    else:
+                        bill_data['date'] = str(bill_data['order_date'])
+                else:
+                    bill_data['date'] = 'N/A'
+
+                bills.append(bill_data)
+
+            # Sort bills by date (newest first)
+            bills.sort(key=lambda x: x.get('order_date') or '', reverse=True)
+
+        except Exception as e:
+            print(f"Error fetching bills: {str(e)}")
+            flash("Error loading bills. Please try again.", 'error')
+
+    return render_template('view_bills.html', bills=bills)
+
+@app.route('/update_bill_status/<bill_id>', methods=['POST'])
+@login_required
+def update_bill_status(bill_id):
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    new_status = request.form.get('status')
+    valid_statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed']
+
+    if new_status not in valid_statuses:
+        flash("Invalid status.", 'error')
+        return redirect(url_for('view_bills'))
+
+    if db:
+        try:
+            bill_ref = db.collection('orders').document(bill_id)
+            bill_ref.update({
+                'status': new_status,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            })
+            flash(f"Bill status updated to '{new_status.replace('_', ' ').title()}'.", 'success')
+        except Exception as e:
+            print(f"Error updating bill status: {str(e)}")
+            flash("Error updating bill status. Please try again.", 'error')
+    else:
+        flash('Database not available.', 'error')
+
+    return redirect(url_for('view_bills'))
+
+@app.route('/create_bill', methods=['GET', 'POST'])
+@login_required
+def create_bill():
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    # Fetch available products for dropdown
+    products = []
+    if db:
+        try:
+            products_ref = db.collection('products')
+            products_docs = products_ref.stream()
+            for product_doc in products_docs:
+                product_data = product_doc.to_dict()
+                product_data['id'] = product_doc.id
+                products.append(product_data)
+        except Exception as e:
+            print(f"Error fetching products: {str(e)}")
+
+    if request.method == 'POST':
+        # For now, just redirect to view_bills since bill creation is complex
+        # In a real implementation, this would create custom bills
+        flash("Bill creation feature coming soon.", 'info')
+        return redirect(url_for('view_bills'))
+
+    return render_template('create_bill.html', products=products)
+
+@app.route('/print_bill/<bill_id>')
+@login_required
+def print_bill(bill_id):
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    # Fetch bill data
+    if db:
+        try:
+            bill_doc = db.collection('orders').document(bill_id).get()
+            if bill_doc.exists:
+                bill_data = bill_doc.to_dict()
+                bill_data['id'] = bill_id
+
+                # Format order date
+                if bill_data.get('order_date'):
+                    if hasattr(bill_data['order_date'], 'strftime'):
+                        bill_data['date'] = bill_data['order_date'].strftime('%Y-%m-%d %H:%M')
+                    else:
+                        bill_data['date'] = str(bill_data['order_date'])
+                else:
+                    bill_data['date'] = 'N/A'
+
+                return render_template('print_bill.html', bill=bill_data)
+            else:
+                flash("Bill not found.", 'error')
+        except Exception as e:
+            print(f"Error fetching bill: {str(e)}")
+            flash("Error loading bill. Please try again.", 'error')
+    else:
+        flash('Database not available.', 'error')
+
+    return redirect(url_for('view_bills'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

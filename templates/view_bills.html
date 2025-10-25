@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - View Bills</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('account') }}" class="account-link">👤 {{ current_user.email.split('@')[0] if current_user.email else 'Admin' }}</a>
+            {% if current_user.is_admin() %}
+                <a href="{{ url_for('products') }}" class="admin-link">Manage Products</a>
+                <a href="{{ url_for('admin') }}" class="admin-link">Admin Panel</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Billing Management</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="billing-actions">
+            <a href="{{ url_for('create_bill') }}" class="btn" style="background-color: #28a745;">Create New Bill</a>
+        </div>
+
+        {% if bills %}
+        <div class="bills-container">
+            {% for bill in bills %}
+            <div class="bill-card">
+                <div class="bill-header">
+                    <h3>Bill #{{ bill.id[:8].upper() }}</h3>
+                    <span class="bill-date">{{ bill.date }}</span>
+                    <span class="bill-status {{ bill.status.lower() }}">{{ bill.status.replace('_', ' ').title() }}</span>
+                </div>
+                <div class="bill-customer">
+                    <p><strong>Customer:</strong> {{ bill.user_name }} ({{ bill.user_email }})</p>
+                    <p><strong>Phone:</strong> {{ bill.user_phone }}</p>
+                    <p><strong>Address:</strong> {{ bill.user_address }}</p>
+                </div>
+                <div class="bill-items">
+                    <h4>Items:</h4>
+                    {% for item in bill.get('items', []) %}
+                    <div class="bill-item">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="item-details">Qty: {{ item.quantity }} × ₹{{ "%.2f"|format(item.price) }}</span>
+                        <span class="item-subtotal">₹{{ "%.2f"|format(item.subtotal) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="bill-total">
+                    <h4>Total: ₹{{ "%.2f"|format(bill.total_amount) }}</h4>
+                </div>
+                <div class="bill-actions">
+                    <button onclick="printBill('{{ bill.id }}')" class="btn" style="background-color: #007bff;">Print Bill</button>
+                    <button onclick="updateStatus('{{ bill.id }}', '{{ bill.status }}')" class="btn" style="background-color: #ffc107;">Update Status</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-bills">
+            <h3>No bills found</h3>
+            <p>No customer orders have been placed yet.</p>
+            <a href="{{ url_for('catalog') }}" class="btn">View Catalog</a>
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        function printBill(billId) {
+            // Open bill in new window for printing
+            window.open('/print_bill/' + billId, '_blank');
+        }
+
+        function updateStatus(billId, currentStatus) {
+            const statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed'];
+            const currentIndex = statuses.indexOf(currentStatus);
+
+            // Create a modal for status selection
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            let optionsHtml = '';
+            statuses.forEach((status, index) => {
+                const displayStatus = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const isCurrent = status === currentStatus;
+                const isRecommended = index === currentIndex + 1; // Next logical step
+
+                optionsHtml += `
+                    <button onclick="selectStatus('${billId}', '${status}')" class="status-option ${isCurrent ? 'current' : ''} ${isRecommended ? 'recommended' : ''}" style="
+                        display: block;
+                        width: 100%;
+                        padding: 12px;
+                        margin: 5px 0;
+                        border: 2px solid ${isCurrent ? '#007bff' : isRecommended ? '#28a745' : '#ddd'};
+                        background: ${isCurrent ? '#e7f3ff' : isRecommended ? '#f8fff9' : 'white'};
+                        border-radius: 6px;
+                        cursor: pointer;
+                        text-align: left;
+                        font-weight: ${isRecommended ? 'bold' : 'normal'};
+                    ">
+                        ${displayStatus} ${isCurrent ? '(Current)' : isRecommended ? '(Recommended)' : ''}
+                    </button>
+                `;
+            });
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
+                    <h3 style="margin-top: 0; color: #333;">Update Bill Status</h3>
+                    <p>Current status: <strong>${currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong></p>
+                    <div style="margin: 20px 0;">
+                        ${optionsHtml}
+                    </div>
+                    <div style="text-align: right;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        function selectStatus(billId, newStatus) {
+            // Create a form to submit the status update
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/update_bill_status/' + billId;
+
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = newStatus;
+
+            form.appendChild(statusInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+</html>

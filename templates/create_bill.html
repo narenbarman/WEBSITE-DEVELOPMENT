@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Create Bill</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('account') }}" class="account-link">👤 {{ current_user.email.split('@')[0] if current_user.email else 'Admin' }}</a>
+            {% if current_user.is_admin() %}
+                <a href="{{ url_for('products') }}" class="admin-link">Manage Products</a>
+                <a href="{{ url_for('admin') }}" class="admin-link">Admin Panel</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Create New Bill</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="create-bill-container">
+            <div class="bill-form-section">
+                <h3>Manual Bill Creation</h3>
+                <p>This feature allows you to create custom bills for special orders or services.</p>
+
+                <form method="POST" class="bill-form">
+                    <div class="form-group">
+                        <label for="customer_name">Customer Name:</label>
+                        <input type="text" id="customer_name" name="customer_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer_email">Customer Email (Optional):</label>
+                        <input type="email" id="customer_email" name="customer_email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer_phone">Customer Phone:</label>
+                        <input type="tel" id="customer_phone" name="customer_phone" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer_address">Customer Address (Optional):</label>
+                        <textarea id="customer_address" name="customer_address" rows="2" placeholder="Customer address..."></textarea>
+                    </div>
+
+                    <!-- Product Items Section -->
+                    <div class="products-section">
+                        <h4>Bill Items</h4>
+                        <div id="products-container">
+                            <div class="product-item" data-index="0">
+                                <div class="form-row single-row">
+                                    <div class="form-group">
+                                        <label for="product_name_0">Product/Service Name:</label>
+                                        <input type="text" id="product_name_0" name="product_name[]" list="products_list_0" onchange="selectProductFromInput(0)" required placeholder="Type or select product name">
+                                        <datalist id="products_list_0">
+                                            {% for product in products %}
+                                            <option value="{{ product.name }}" data-price="{{ product.price }}" data-description="{{ product.description }}">
+                                            {% endfor %}
+                                        </datalist>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="product_description_0">Description (Optional):</label>
+                                        <input type="text" id="product_description_0" name="product_description[]">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="quantity_0">Quantity:</label>
+                                        <input type="number" id="quantity_0" name="quantity[]" min="1" value="1" required onchange="calculateTotals()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="unit_price_0">Unit Price (₹):</label>
+                                        <input type="number" id="unit_price_0" name="unit_price[]" step="0.01" min="0" required onchange="calculateTotals()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="total_0">Total (₹):</label>
+                                        <input type="number" id="total_0" name="total[]" step="0.01" readonly>
+                                    </div>
+                                    <div class="form-group remove-btn-container">
+                                        <button type="button" class="remove-product-btn" style="margin-top: 25px; background-color: #dc3545;" onclick="removeProductItem(0)">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="add-product-btn" class="btn" style="background-color: #007bff; margin-top: 15px;">Add Another Item</button>
+                    </div>
+
+                    <div class="bill-summary">
+                        <div class="form-group">
+                            <label for="subtotal">Subtotal (₹):</label>
+                            <input type="number" id="subtotal" name="subtotal" step="0.01" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="tax_rate">Tax Rate (%):</label>
+                            <input type="number" id="tax_rate" name="tax_rate" step="0.01" min="0" max="100" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="tax_amount">Tax Amount (₹):</label>
+                            <input type="number" id="tax_amount" name="tax_amount" step="0.01" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="grand_total"><strong>Grand Total (₹):</strong></label>
+                            <input type="number" id="grand_total" name="grand_total" step="0.01" readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bill_notes">Additional Notes (Optional):</label>
+                        <textarea id="bill_notes" name="bill_notes" rows="2" placeholder="Any additional notes..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bill_date">Bill Date:</label>
+                        <input type="date" id="bill_date" name="bill_date" required>
+                    </div>
+
+                    <button type="submit" class="btn" style="background-color: #28a745;">Create Bill</button>
+                </form>
+            </div>
+
+            <div class="bill-info-section">
+                <h3>Bill Information</h3>
+                <div class="info-card">
+                    <h4>📋 Bill Types</h4>
+                    <ul>
+                        <li><strong>Order Bills:</strong> Automatically generated from customer orders</li>
+                        <li><strong>Custom Bills:</strong> Manually created for special services</li>
+                        <li><strong>Service Bills:</strong> For maintenance or custom work</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4>💡 Tips</h4>
+                    <ul>
+                        <li>Use clear descriptions for bill items</li>
+                        <li>Include customer contact information</li>
+                        <li>Set appropriate bill dates</li>
+                        <li>Review bills before finalizing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="{{ url_for('view_bills') }}" class="btn" style="background-color: #6c757d;">← Back to Bills</a>
+        </div>
+    </main>
+
+    <script>
+        let productIndex = 1;
+
+        function addProductItem() {
+            const container = document.getElementById('products-container');
+            const productItem = document.createElement('div');
+            productItem.className = 'product-item';
+            productItem.setAttribute('data-index', productIndex);
+
+            let datalistHtml = `{% for product in products %}<option value="{{ product.name }}" data-price="{{ product.price }}" data-description="{{ product.description }}">{% endfor %}`;
+
+            productItem.innerHTML = `
+                <div class="form-row single-row">
+                    <div class="form-group">
+                        <label for="product_name_${productIndex}">Product/Service Name:</label>
+                        <input type="text" id="product_name_${productIndex}" name="product_name[]" list="products_list_${productIndex}" onchange="selectProductFromInput(${productIndex})" required placeholder="Type or select product name">
+                        <datalist id="products_list_${productIndex}">
+                            ${datalistHtml}
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="product_description_${productIndex}">Description (Optional):</label>
+                        <input type="text" id="product_description_${productIndex}" name="product_description[]">
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity_${productIndex}">Quantity:</label>
+                        <input type="number" id="quantity_${productIndex}" name="quantity[]" min="1" value="1" required onchange="calculateTotals()">
+                    </div>
+                    <div class="form-group">
+                        <label for="unit_price_${productIndex}">Unit Price (₹):</label>
+                        <input type="number" id="unit_price_${productIndex}" name="unit_price[]" step="0.01" min="0" required onchange="calculateTotals()">
+                    </div>
+                    <div class="form-group">
+                        <label for="total_${productIndex}">Total (₹):</label>
+                        <input type="number" id="total_${productIndex}" name="total[]" step="0.01" readonly>
+                    </div>
+                    <div class="form-group remove-btn-container">
+                        <button type="button" class="remove-product-btn" style="margin-top: 25px; background-color: #dc3545;" onclick="removeProductItem(${productIndex})">Remove</button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(productItem);
+            productIndex++;
+            calculateTotals();
+        }
+
+        function removeProductItem(index) {
+            const productItem = document.querySelector(`.product-item[data-index="${index}"]`);
+            if (productItem) {
+                productItem.remove();
+                calculateTotals();
+            }
+        }
+
+        function calculateTotals() {
+            let subtotal = 0;
+
+            // Calculate each product's total
+            document.querySelectorAll('.product-item').forEach(item => {
+                const index = item.getAttribute('data-index');
+                const quantity = parseFloat(document.getElementById(`quantity_${index}`).value) || 0;
+                const unitPrice = parseFloat(document.getElementById(`unit_price_${index}`).value) || 0;
+                const total = quantity * unitPrice;
+
+                document.getElementById(`total_${index}`).value = total.toFixed(2);
+                subtotal += total;
+            });
+
+            // Calculate tax and grand total
+            const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+            const taxAmount = (subtotal * taxRate) / 100;
+            const grandTotal = subtotal + taxAmount;
+
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            document.getElementById('tax_amount').value = taxAmount.toFixed(2);
+            document.getElementById('grand_total').value = grandTotal.toFixed(2);
+        }
+
+        function selectProductFromInput(index) {
+            const inputElement = document.getElementById(`product_name_${index}`);
+            const inputValue = inputElement.value;
+            const descriptionInput = document.getElementById(`product_description_${index}`);
+            const priceInput = document.getElementById(`unit_price_${index}`);
+
+            // Find matching product from datalist
+            const datalist = document.getElementById(`products_list_${index}`);
+            const options = datalist.options;
+
+            let foundProduct = null;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === inputValue) {
+                    foundProduct = options[i];
+                    break;
+                }
+            }
+
+            if (foundProduct) {
+                // Auto-fill from product data
+                const price = foundProduct.getAttribute('data-price');
+                const description = foundProduct.getAttribute('data-description');
+
+                if (price) priceInput.value = price;
+                if (description) descriptionInput.value = description;
+            } else {
+                // Custom product - clear auto-filled fields
+                descriptionInput.value = '';
+                priceInput.value = '';
+            }
+
+            calculateTotals();
+        }
+
+        // Initialize calculations and event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('add-product-btn').addEventListener('click', addProductItem);
+            document.getElementById('tax_rate').addEventListener('input', calculateTotals);
+
+            // Set default bill date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bill_date').value = today;
+
+            // Initial calculation
+            calculateTotals();
+        });
+
+        function printBill(billId) {
+            // Open bill in new window for printing
+            window.open('/print_bill/' + billId, '_blank');
+        }
+
+        function updateStatus(billId, currentStatus) {
+            const newStatus = prompt('Enter new status (pending/processing/shipped/delivered/cancelled):', currentStatus);
+            if (newStatus && newStatus !== currentStatus) {
+                // In a real implementation, this would make an AJAX call to update the status
+                alert('Status update feature coming soon. New status: ' + newStatus);
+            }
+        }
+    </script>
+</body>
+</html>

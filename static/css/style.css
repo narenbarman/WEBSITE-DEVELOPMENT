@@ -73,6 +73,10 @@ input, textarea, button {
     box-sizing: border-box;
 }
 
+input[list] {
+    width: 100%;
+}
+
 button {
     background-color: #4CAF50;
     color: white;
@@ -167,5 +171,703 @@ button:hover {
 
     .products {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Cart page styles */
+.cart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cart-items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.cart-item {
+    display: flex;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    align-items: center;
+    gap: 20px;
+}
+
+.item-image img {
+    max-width: 150px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.no-image {
+    width: 150px;
+    height: 150px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #666;
+    font-weight: bold;
+}
+
+.item-details {
+    flex: 1;
+}
+
+.item-details h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.item-description {
+    color: #666;
+    margin: 0 0 10px 0;
+}
+
+.item-price {
+    font-weight: bold;
+    color: #28a745;
+    margin: 0 0 15px 0;
+}
+
+.item-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.quantity-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quantity-form label {
+    margin: 0;
+}
+
+.quantity-form input {
+    width: 60px;
+    padding: 5px;
+    margin: 0;
+}
+
+.update-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.update-btn:hover {
+    background-color: #0056b3;
+}
+
+.item-subtotal {
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.remove-form {
+    margin-left: auto;
+}
+
+.remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.remove-btn:hover {
+    background-color: #c82333;
+}
+
+.cart-summary {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.cart-summary h3 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.checkout-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.checkout-btn:hover {
+    background-color: #218838;
+}
+
+/* Navigation link styles for cart page */
+.cart-link {
+    background-color: #ffc107 !important;
+    color: black !important;
+}
+
+.account-link {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.admin-link {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.logout-link {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+/* Responsive cart styles */
+@media (max-width: 768px) {
+    .cart-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .item-image img,
+    .no-image {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+    }
+
+    .item-controls {
+        justify-content: center;
+    }
+
+    .remove-form {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .cart-summary h3 {
+        font-size: 20px;
+    }
+
+    .checkout-btn {
+        width: 100%;
+    }
+}
+
+/* Orders page styles */
+.orders-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.order-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.order-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.order-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.order-status {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.order-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.order-status.processing {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.order-status.shipped {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.order-status.delivered {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.order-status.cancelled, .bill-status.cancelled,
+.order-status.closed, .bill-status.closed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-option.current {
+    border-color: #007bff !important;
+    background-color: #e7f3ff !important;
+}
+
+.status-option.recommended {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+    font-weight: bold;
+}
+
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.order-item .item-image img {
+    max-width: 80px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.order-item .no-image {
+    width: 80px;
+    height: 80px;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: #6c757d;
+    font-size: 0.8em;
+    text-align: center;
+}
+
+.order-item .item-details {
+    flex: 1;
+}
+
+.order-item .item-details h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.order-item .item-details p {
+    margin: 2px 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.order-total {
+    text-align: right;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.order-total h4 {
+    margin: 0;
+    color: #28a745;
+    font-size: 1.2em;
+}
+
+.no-orders {
+    text-align: center;
+    padding: 50px 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.no-orders h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.no-orders p {
+    color: #999;
+    margin-bottom: 20px;
+}
+
+/* Responsive orders styles */
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .order-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .order-item .item-image img,
+    .order-item .no-image {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+    }
+
+    .order-total {
+        text-align: center;
+    }
+}
+
+/* Bills page styles */
+.billing-actions {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.bills-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bill-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.bill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.bill-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.bill-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.bill-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.bill-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.bill-status.processing {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.bill-status.shipped {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.bill-status.delivered {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.bill-status.cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.bill-customer {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.bill-customer p {
+    margin: 5px 0;
+    color: #555;
+}
+
+.bill-items {
+    margin-bottom: 15px;
+}
+
+.bill-items h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.bill-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.item-name {
+    font-weight: bold;
+    color: #333;
+    flex: 1;
+}
+
+.item-details {
+    color: #666;
+    font-size: 0.9em;
+    margin: 0 15px;
+}
+
+.item-subtotal {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.bill-total {
+    text-align: right;
+    padding-top: 15px;
+    border-top: 2px solid #eee;
+    margin-bottom: 15px;
+}
+
+.bill-total h4 {
+    margin: 0;
+    color: #28a745;
+    font-size: 1.3em;
+}
+
+.bill-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.no-bills {
+    text-align: center;
+    padding: 50px 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.no-bills h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.no-bills p {
+    color: #999;
+    margin-bottom: 20px;
+}
+
+/* Create bill page styles */
+.create-bill-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.form-row.single-row {
+    flex-wrap: wrap;
+}
+
+.form-row.single-row .form-group {
+    min-width: 150px;
+    flex: 1;
+}
+
+.form-row.single-row .form-group:first-child {
+    min-width: 200px;
+    flex: 2;
+}
+
+.remove-btn-container {
+    display: flex;
+    align-items: flex-end;
+}
+
+.products-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.products-section h4 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+.product-item {
+    background-color: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.product-item:last-child {
+    margin-bottom: 0;
+}
+
+.bill-summary {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.bill-summary .form-group {
+    margin-bottom: 0;
+}
+
+.bill-summary label {
+    font-weight: bold;
+    color: #495057;
+}
+
+.bill-form-section {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.bill-form-section h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.bill-form {
+    margin-top: 20px;
+}
+
+.bill-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.info-card h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.info-card ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.info-card li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.back-link {
+    text-align: center;
+}
+
+/* Responsive bills styles */
+@media (max-width: 768px) {
+    .create-bill-container {
+        grid-template-columns: 1fr;
+    }
+
+    .bill-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .bill-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .bill-actions {
+        flex-direction: column;
+    }
+
+    .bill-actions .btn {
+        width: 100%;
     }
 }
