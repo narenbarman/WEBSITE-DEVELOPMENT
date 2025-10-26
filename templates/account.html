@@ -10,10 +10,33 @@
         .account-container {
             max-width: 400px;
             margin: 0 auto;
+            position: relative;
+        }
+        .social-login-sidebar {
+            position: absolute;
+            right: -200px;
+            bottom: 0;
+            width: 180px;
+        }
+        .social-login-sidebar .social-buttons {
+            background: linear-gradient(135deg, #3958e4 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 8px 32px rgba(1, 27, 119, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        .social-login-sidebar h4 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #cf7171;
+            text-align: center;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .account-section {
             padding: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid #0a0909;
             border-radius: 8px;
             margin-bottom: 20px;
         }
@@ -132,25 +155,25 @@
             </div>
         {% else %}
             <div class="account-container">
+                <!-- Social Login Sidebar -->
+                <div class="social-login-sidebar">
+                    <div class="social-buttons">
+                        <h4>Quick Login</h4>
+                        <a href="{{ url_for('login_google') }}" style="display: block; background-color: rgba(255,255,255,0.9); color: #3c4043; padding: 14px 16px; text-decoration: none; border-radius: 25px; font-weight: 500; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); transition: all 0.3s; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;">
+                            Google
+                        </a>
+                        <a href="{{ url_for('login_facebook') }}" style="display: block; background-color: rgba(255,255,255,0.2); color: #ffffff; padding: 14px 16px; text-decoration: none; border-radius: 25px; font-weight: 500; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); transition: all 0.3s; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <svg style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px; fill: currentColor;" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            Facebook
+                        </a>
+                    </div>
+                </div>
+
                 <div class="account-section">
                     <h3>Login</h3>
-
-                    <!-- Social Login Buttons -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div style="margin-bottom: 15px;">
-                            <a href="{{ url_for('login_google') }}" style="display: inline-block; background-color: #db4437; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
-                                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;">
-                                Login with Google
-                            </a>
-                            <a href="{{ url_for('login_facebook') }}" style="display: inline-block; background-color: #4267B2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                                <span style="font-size: 16px; margin-right: 8px;">f</span>
-                                Login with Facebook
-                            </a>
-                        </div>
-                        <div style="border-top: 1px solid #ddd; margin: 15px 0; position: relative;">
-                            <span style="background-color: white; padding: 0 10px; color: #666; font-size: 14px;">or</span>
-                        </div>
-                    </div>
 
                     <form method="POST">
                         <input type="hidden" name="login" value="1">
@@ -174,23 +197,6 @@
 
                 <div class="account-section register-section" id="registerSection">
                     <h3>Register</h3>
-
-                    <!-- Social Login Buttons for Registration -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div style="margin-bottom: 15px;">
-                            <a href="{{ url_for('login_google') }}" style="display: inline-block; background-color: #db4437; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
-                                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;">
-                                Sign up with Google
-                            </a>
-                            <a href="{{ url_for('login_facebook') }}" style="display: inline-block; background-color: #4267B2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                                <span style="font-size: 16px; margin-right: 8px;">f</span>
-                                Sign up with Facebook
-                            </a>
-                        </div>
-                        <div style="border-top: 1px solid #ddd; margin: 15px 0; position: relative;">
-                            <span style="background-color: white; padding: 0 10px; color: #666; font-size: 14px;">or</span>
-                        </div>
-                    </div>
 
                     <form method="POST">
                         <input type="hidden" name="register" value="1">

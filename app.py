@@ -1649,6 +1649,10 @@ def print_bill(bill_id):
 
     return redirect(url_for('view_bills'))
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 @app.route('/help')
 def help():
     return render_template('help.html')
