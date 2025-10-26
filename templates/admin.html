@@ -171,6 +171,7 @@
         <nav>
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
             <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'Admin' }}</a>
         </nav>
     </header>
@@ -195,6 +196,7 @@
                 <button class="tab-button" onclick="showTab('products')">📦 Product Management</button>
                 <button class="tab-button" onclick="showTab('purchases')">🛒 Purchase Register</button>
                 <button class="tab-button" onclick="showTab('billing')">💳 Billing</button>
+                <button class="tab-button" onclick="showTab('support')">🎧 Support</button>
                 <button class="tab-button" onclick="showTab('overview')">📊 Overview</button>
             </div>
 
@@ -329,6 +331,28 @@
                     <div class="action-card">
                         <h3>📊 Billing Reports</h3>
                         <p>Analyze billing data</p>
+                        <a href="#">Coming Soon</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Tab -->
+            <div id="support" class="tab-content">
+                <h3>Customer Support</h3>
+                <div class="quick-actions">
+                    <div class="action-card">
+                        <h3>🎫 View Support Tickets</h3>
+                        <p>Manage customer support requests</p>
+                        <a href="{{ url_for('admin_support') }}">View Tickets</a>
+                    </div>
+                    <div class="action-card">
+                        <h3>📊 Support Analytics</h3>
+                        <p>View support ticket statistics</p>
+                        <a href="#">Coming Soon</a>
+                    </div>
+                    <div class="action-card">
+                        <h3>📋 FAQ Management</h3>
+                        <p>Manage frequently asked questions</p>
                         <a href="#">Coming Soon</a>
                     </div>
                 </div>

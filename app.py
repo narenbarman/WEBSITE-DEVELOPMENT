@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from firebase_config import initialize_firebase, db
 import os
 from dotenv import load_dotenv
@@ -6,12 +6,50 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import requests
 from firebase_admin import firestore
 import json
+import time
+import random
+import string
+from datetime import datetime, timedelta
+from authlib.integrations.flask_client import OAuth
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key')
+
+# OAuth Configuration
+oauth = OAuth(app)
+
+# Google OAuth Configuration
+google = oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    access_token_url='https://oauth2.googleapis.com/token',
+    access_token_params=None,
+    refresh_token_url=None,
+    redirect_uri=os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/authorize/google'),
+    jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
+
+# Facebook OAuth Configuration
+facebook = oauth.register(
+    name='facebook',
+    client_id=os.getenv('FACEBOOK_APP_ID'),
+    client_secret=os.getenv('FACEBOOK_APP_SECRET'),
+    access_token_url='https://graph.facebook.com/oauth/access_token',
+    access_token_params=None,
+    authorize_url='https://www.facebook.com/dialog/oauth',
+    authorize_params=None,
+    api_base_url='https://graph.facebook.com/',
+    client_kwargs={'scope': 'email'},
+)
 
 # File-based user storage for Datastore Mode
 USERS_FILE = 'users.json'
@@ -49,26 +87,346 @@ def get_cart_count(user_id):
         print(f"Error getting cart count: {e}")
     return 0
 
+def generate_reset_token():
+    """Generate a secure password reset token"""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
+def send_password_reset_email(email, token):
+    """Send password reset email via Gmail SMTP"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        # Email configuration
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        smtp_username = os.getenv('SMTP_USERNAME')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        from_email = os.getenv('FROM_EMAIL', smtp_username)
+        from_name = os.getenv('FROM_NAME', 'Barman Store')
+
+        if not smtp_username or not smtp_password:
+            print("SMTP credentials not configured. Falling back to console output.")
+            # Fallback to console output for demo
+            reset_url = f"http://localhost:5000/reset_password/{token}"
+            print("=" * 50)
+            print(f"PASSWORD RESET LINK FOR: {email}")
+            print("=" * 50)
+            print(f"Direct Link: {reset_url}")
+            print("=" * 50)
+            return True
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Reset Your Barman Store Password"
+        msg['From'] = f"{from_name} <{from_email}>"
+        msg['To'] = email
+
+        # HTML email content
+        reset_url = f"http://localhost:5000/reset_password/{token}"
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #007bff;">Reset Your Barman Store Password</h2>
+                <p>You requested a password reset for your Barman Store account.</p>
+                <p>Please click the button below to reset your password:</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+                </p>
+                <p><strong>Important:</strong> This link will expire in 1 hour for security reasons.</p>
+                <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">{reset_url}</p>
+                <p>If you didn't request a password reset, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #666; font-size: 12px;">
+                    Best regards,<br>
+                    Barman Store Team
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text fallback
+        text = f"""
+        Reset Your Barman Store Password
+
+        You requested a password reset for your Barman Store account.
+
+        Click the link below to reset your password:
+        {reset_url}
+
+        This link will expire in 1 hour.
+
+        If you didn't request a password reset, please ignore this email.
+
+        Best regards,
+        Barman Store Team
+        """
+
+        # Attach parts
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()  # Secure the connection
+        server.login(smtp_username, smtp_password)
+        server.sendmail(from_email, email, msg.as_string())
+        server.quit()
+
+        print(f"Password reset email sent successfully to: {email}")
+        return True
+
+    except Exception as e:
+        print(f"Failed to send password reset email via SMTP: {str(e)}")
+        print("Falling back to console output...")
+
+        # Fallback to console output
+        reset_url = f"http://localhost:5000/reset_password/{token}"
+        print("=" * 50)
+        print(f"PASSWORD RESET LINK FOR: {email}")
+        print("=" * 50)
+        print(f"Direct Link: {reset_url}")
+        print("=" * 50)
+
+        return False
+
+def send_support_ticket_confirmation(user_email, ticket_id, subject):
+    """Send support ticket confirmation email to user"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        # Email configuration
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        smtp_username = os.getenv('SMTP_USERNAME')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        from_email = os.getenv('FROM_EMAIL', smtp_username)
+        from_name = os.getenv('FROM_NAME', 'Barman Store')
+
+        if not smtp_username or not smtp_password:
+            print("SMTP credentials not configured. Support confirmation email not sent.")
+            return False
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"Support Ticket Created - {ticket_id[:8].upper()}"
+        msg['From'] = f"{from_name} <{from_email}>"
+        msg['To'] = user_email
+
+        # HTML email content
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #28a745;">Support Ticket Created Successfully</h2>
+                <p>Hello,</p>
+                <p>Thank you for contacting Barman Store support. Your support ticket has been created successfully.</p>
+
+                <div style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 20px; margin: 20px 0;">
+                    <h3>Ticket Details:</h3>
+                    <p><strong>Ticket ID:</strong> {ticket_id[:8].upper()}</p>
+                    <p><strong>Subject:</strong> {subject}</p>
+                    <p><strong>Status:</strong> Open</p>
+                    <p><strong>Created:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</p>
+                </div>
+
+                <p>Our support team will review your ticket and respond as soon as possible. You can check the status of your ticket by logging into your account and visiting the Support section.</p>
+
+                <p>If you have any additional information to add to this ticket, please reply to this email or update it through your account.</p>
+
+                <h3>Contact Information:</h3>
+                <p><strong>Email:</strong> {{ os.environ.get('SUPPORT_EMAIL', 'support@barmanstore.com') }}</p>
+                <p><strong>Phone:</strong> {{ os.environ.get('SUPPORT_PHONE', '+91-9876543210') }}</p>
+                <p><strong>Business Hours:</strong> Monday to Saturday: 9:00 AM - 9:00 PM IST</p>
+
+                <p>Best regards,<br>Barman Store Support Team</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text fallback
+        text = f"""
+        Support Ticket Created Successfully
+
+        Hello,
+
+        Thank you for contacting Barman Store support. Your support ticket has been created successfully.
+
+        Ticket Details:
+        Ticket ID: {ticket_id[:8].upper()}
+        Subject: {subject}
+        Status: Open
+        Created: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+
+        Our support team will review your ticket and respond as soon as possible.
+
+        Contact Information:
+        Email: support@barmanstore.com
+        Phone: +91-XXXXXXXXXX
+        Business Hours: Monday to Saturday: 9:00 AM - 9:00 PM IST
+
+        Best regards,
+        Barman Store Support Team
+        """
+
+        # Attach parts
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        server.sendmail(from_email, user_email, msg.as_string())
+        server.quit()
+
+        print(f"Support ticket confirmation email sent to: {user_email}")
+        return True
+
+    except Exception as e:
+        print(f"Failed to send support ticket confirmation email: {str(e)}")
+        return False
+
+def send_admin_support_notification(ticket_id, subject, category, priority, user_email):
+    """Send notification email to admin about new support ticket"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        # Email configuration
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        smtp_username = os.getenv('SMTP_USERNAME')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        from_email = os.getenv('FROM_EMAIL', smtp_username)
+        from_name = os.getenv('FROM_NAME', 'Barman Store')
+
+        if not smtp_username or not smtp_password:
+            print("SMTP credentials not configured. Admin notification email not sent.")
+            return False
+
+        # Send to admin email (you can configure this)
+        admin_email = os.getenv('ADMIN_EMAIL', smtp_username)  # Default to same as from_email
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"New Support Ticket - {ticket_id[:8].upper()}"
+        msg['From'] = f"{from_name} <{from_email}>"
+        msg['To'] = admin_email
+
+        # HTML email content
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #dc3545;">New Support Ticket Received</h2>
+                <p>A new support ticket has been submitted and requires your attention.</p>
+
+                <div style="background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 20px; margin: 20px 0;">
+                    <h3>Ticket Details:</h3>
+                    <p><strong>Ticket ID:</strong> {ticket_id[:8].upper()}</p>
+                    <p><strong>Subject:</strong> {subject}</p>
+                    <p><strong>Category:</strong> {category.title()}</p>
+                    <p><strong>Priority:</strong> <span style="color: {'#dc3545' if priority == 'high' else '#ffc107' if priority == 'medium' else '#28a745'};">{priority.title()}</span></p>
+                    <p><strong>User Email:</strong> {user_email}</p>
+                    <p><strong>Created:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</p>
+                </div>
+
+                <p>Please log into the admin panel to view and respond to this support ticket.</p>
+
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="http://localhost:5000/admin/support/{ticket_id}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Ticket in Admin Panel</a>
+                </p>
+
+                <p>Best regards,<br>Barman Store System</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text fallback
+        text = f"""
+        New Support Ticket Received
+
+        A new support ticket has been submitted and requires your attention.
+
+        Ticket Details:
+        Ticket ID: {ticket_id[:8].upper()}
+        Subject: {subject}
+        Category: {category.title()}
+        Priority: {priority.title()}
+        User Email: {user_email}
+        Created: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+
+        Please log into the admin panel to view and respond to this support ticket.
+
+        Best regards,
+        Barman Store System
+        """
+
+        # Attach parts
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        server.sendmail(from_email, admin_email, msg.as_string())
+        server.quit()
+
+        print(f"Admin support notification email sent to: {admin_email}")
+        return True
+
+    except Exception as e:
+        print(f"Failed to send admin support notification email: {str(e)}")
+        return False
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Context processor to inject cart count into all templates
+# Context processor to inject cart count and environment variables into all templates
 @app.context_processor
 def inject_cart_count():
+    data = {'cart_count': 0}
     if current_user.is_authenticated:
-        return {'cart_count': get_cart_count(current_user.id)}
-    return {'cart_count': 0}
+        data['cart_count'] = get_cart_count(current_user.id)
+
+    # Add environment variables for templates
+    data['SUPPORT_EMAIL'] = os.environ.get('SUPPORT_EMAIL', 'support@barmanstore.com')
+    data['SUPPORT_PHONE'] = os.environ.get('SUPPORT_PHONE', '+91-9876543210')
+    data['ADMIN_EMAIL'] = os.environ.get('ADMIN_EMAIL', 'admin@barmanstore.com')
+    data['BUSINESS_HOURS'] = os.environ.get('BUSINESS_HOURS', 'Monday to Saturday: 9:00 AM - 9:00 PM IST, Sunday: 10:00 AM - 6:00 PM IST')
+
+    return data
 
 # Initialize Firebase on app startup
 initialize_firebase()
 
+
 class User(UserMixin):
-    def __init__(self, uid, email, role='customer'):
+    def __init__(self, uid, email, role='customer', oauth_provider=None, oauth_id=None):
         self.id = uid
         self.email = email
         self.role = role
+        self.oauth_provider = oauth_provider
+        self.oauth_id = oauth_id
 
     def is_admin(self):
         return self.role == 'admin'
@@ -81,9 +439,11 @@ def load_user(user_id):
             user_doc = db.collection('users').document(user_id).get()
             if user_doc.exists:
                 user_data = user_doc.to_dict()
-                role = user_data.get('role', 'user')
+                role = user_data.get('role', 'customer')
                 email = user_data.get('email', '')
-                return User(user_id, email, role)
+                oauth_provider = user_data.get('oauth_provider')
+                oauth_id = user_data.get('oauth_id')
+                return User(user_id, email, role, oauth_provider, oauth_id)
         except Exception as e:
             print(f"Error loading user {user_id}: {e}")
 
@@ -211,7 +571,7 @@ def account():
                     user = User(user_id, email, 'customer')
                     login_user(user)
 
-                    flash("Account created successfully!", 'success')
+                    flash("Account created successfully! You can now start shopping.", 'success')
 
                     return redirect(url_for('home'))
 
@@ -235,6 +595,133 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
+# OAuth Routes
+@app.route('/login/google')
+def login_google():
+    redirect_uri = url_for('authorize_google', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/login/facebook')
+def login_facebook():
+    redirect_uri = url_for('authorize_facebook', _external=True)
+    return facebook.authorize_redirect(redirect_uri)
+
+@app.route('/authorize/google')
+def authorize_google():
+    try:
+        token = google.authorize_access_token()
+        resp = google.get('https://www.googleapis.com/oauth2/v2/userinfo')
+        user_info = resp.json()
+
+        # Check if user exists in Firestore
+        if db:
+            try:
+                # Find user by OAuth ID
+                users_ref = db.collection('users')
+                query = users_ref.where('oauth_provider', '==', 'google').where('oauth_id', '==', user_info['id']).limit(1)
+                users = list(query.stream())
+
+                if users:
+                    # User exists, log them in
+                    user_doc = users[0]
+                    user_data = user_doc.to_dict()
+                    user = User(user_doc.id, user_data['email'], user_data.get('role', 'customer'), 'google', user_info['id'])
+                    login_user(user)
+                    flash("Login successful!", 'success')
+                    return redirect(url_for('home'))
+                else:
+                    # Create new user
+                    import uuid
+                    user_id = str(uuid.uuid4())
+
+                    user_data = {
+                        'first_name': user_info.get('given_name', ''),
+                        'last_name': user_info.get('family_name', ''),
+                        'email': user_info['email'],
+                        'phone': '',
+                        'address': '',
+                        'role': 'customer',
+                        'oauth_provider': 'google',
+                        'oauth_id': user_info['id'],
+                        'created_at': firestore.SERVER_TIMESTAMP,
+                    }
+
+                    db.collection('users').document(user_id).set(user_data)
+
+                    user = User(user_id, user_info['email'], 'customer', 'google', user_info['id'])
+                    login_user(user)
+                    flash("Account created successfully! You can now start shopping.", 'success')
+                    return redirect(url_for('home'))
+
+            except Exception as e:
+                flash(f"OAuth login failed: {str(e)}", 'error')
+                return redirect(url_for('account'))
+        else:
+            flash("Database not available.", 'error')
+            return redirect(url_for('account'))
+
+    except Exception as e:
+        flash(f"Google OAuth failed: {str(e)}", 'error')
+        return redirect(url_for('account'))
+
+@app.route('/authorize/facebook')
+def authorize_facebook():
+    try:
+        token = facebook.authorize_access_token()
+        resp = facebook.get('me?fields=id,name,email,first_name,last_name')
+        user_info = resp.json()
+
+        # Check if user exists in Firestore
+        if db:
+            try:
+                # Find user by OAuth ID
+                users_ref = db.collection('users')
+                query = users_ref.where('oauth_provider', '==', 'facebook').where('oauth_id', '==', user_info['id']).limit(1)
+                users = list(query.stream())
+
+                if users:
+                    # User exists, log them in
+                    user_doc = users[0]
+                    user_data = user_doc.to_dict()
+                    user = User(user_doc.id, user_data['email'], user_data.get('role', 'customer'), 'facebook', user_info['id'])
+                    login_user(user)
+                    flash("Login successful!", 'success')
+                    return redirect(url_for('home'))
+                else:
+                    # Create new user
+                    import uuid
+                    user_id = str(uuid.uuid4())
+
+                    user_data = {
+                        'first_name': user_info.get('first_name', ''),
+                        'last_name': user_info.get('last_name', ''),
+                        'email': user_info.get('email', ''),
+                        'phone': '',
+                        'address': '',
+                        'role': 'customer',
+                        'oauth_provider': 'facebook',
+                        'oauth_id': user_info['id'],
+                        'created_at': firestore.SERVER_TIMESTAMP,
+                    }
+
+                    db.collection('users').document(user_id).set(user_data)
+
+                    user = User(user_id, user_info.get('email', ''), 'customer', 'facebook', user_info['id'])
+                    login_user(user)
+                    flash("Account created successfully! You can now start shopping.", 'success')
+                    return redirect(url_for('home'))
+
+            except Exception as e:
+                flash(f"OAuth login failed: {str(e)}", 'error')
+                return redirect(url_for('account'))
+        else:
+            flash("Database not available.", 'error')
+            return redirect(url_for('account'))
+
+    except Exception as e:
+        flash(f"Facebook OAuth failed: {str(e)}", 'error')
+        return redirect(url_for('account'))
 
 @app.route('/products')
 @login_required
@@ -1077,7 +1564,7 @@ def update_bill_status(bill_id):
         return redirect(url_for('home'))
 
     new_status = request.form.get('status')
-    valid_statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed']
+    valid_statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed', 'cancelled']
 
     if new_status not in valid_statuses:
         flash("Invalid status.", 'error')
@@ -1161,6 +1648,298 @@ def print_bill(bill_id):
         flash('Database not available.', 'error')
 
     return redirect(url_for('view_bills'))
+
+@app.route('/help')
+def help():
+    return render_template('help.html')
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+
+        if db:
+            try:
+                # Check if user exists
+                users_ref = db.collection('users').where('email', '==', email).limit(1)
+                users = list(users_ref.stream())
+
+                if users:
+                    user_doc = users[0]
+                    reset_token = generate_reset_token()
+
+                    # Store reset token with expiry (1 hour from now)
+                    expiry_time = datetime.utcnow() + timedelta(hours=1)
+
+                    db.collection('users').document(user_doc.id).update({
+                        'password_reset_token': reset_token,
+                        'password_reset_expiry': expiry_time,
+                        'updated_at': firestore.SERVER_TIMESTAMP
+                    })
+
+                    send_password_reset_email(email, reset_token)
+                    flash("Password reset link sent to your email. Please check your inbox.", 'success')
+                else:
+                    # Don't reveal if email exists or not for security
+                    flash("If an account with this email exists, a password reset link has been sent.", 'info')
+
+                return redirect(url_for('account'))
+            except Exception as e:
+                flash(f"Error sending reset email: {str(e)}", 'error')
+        else:
+            flash("Database not available.", 'error')
+
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if request.method == 'POST':
+        new_password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Validate passwords match
+        if new_password != confirm_password:
+            flash("Passwords do not match.", 'error')
+            return render_template('reset_password.html', token=token)
+
+        # Validate password strength
+        if len(new_password) < 6:
+            flash("Password must be at least 6 characters long.", 'error')
+            return render_template('reset_password.html', token=token)
+
+        if db:
+            try:
+                # Find user with this reset token
+                users_ref = db.collection('users').where('password_reset_token', '==', token).limit(1)
+                users = list(users_ref.stream())
+
+                if users:
+                    user_doc = users[0]
+                    user_data = user_doc.to_dict()
+
+                    # Check if token is expired
+                    expiry = user_data.get('password_reset_expiry')
+                    if expiry:
+                        # Handle both datetime objects and Firestore timestamps
+                        if hasattr(expiry, 'replace'):  # datetime object with tzinfo
+                            current_time = datetime.utcnow().replace(tzinfo=None)
+                            expiry_time = expiry.replace(tzinfo=None) if hasattr(expiry, 'tzinfo') and expiry.tzinfo else expiry
+                        else:  # Firestore timestamp
+                            current_time = datetime.utcnow()
+                            expiry_time = expiry
+
+                        if current_time > expiry_time:
+                            flash("Password reset link has expired.", 'error')
+                            return redirect(url_for('forgot_password'))
+
+                    # Update password and clear reset token
+                    db.collection('users').document(user_doc.id).update({
+                        'password': new_password,
+                        'password_reset_token': None,
+                        'password_reset_expiry': None,
+                        'updated_at': firestore.SERVER_TIMESTAMP
+                    })
+
+                    flash("Password reset successfully! You can now log in with your new password.", 'success')
+                    return redirect(url_for('account'))
+                else:
+                    flash("Invalid or expired reset link.", 'error')
+            except Exception as e:
+                flash(f"Error resetting password: {str(e)}", 'error')
+        else:
+            flash("Database not available.", 'error')
+
+    return render_template('reset_password.html', token=token)
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        phone = request.form['phone']
+        address = request.form['address']
+
+        # Validate phone number format
+        import re
+        phone_pattern = r'^\+?[1-9]\d{1,14}$'
+        clean_phone = re.sub(r'[\s\-\(\)]', '', phone)
+        if not re.match(phone_pattern, clean_phone):
+            flash("Please enter a valid phone number (e.g., +1234567890 or 1234567890).", 'error')
+            return render_template('edit_profile.html')
+
+        if db:
+            try:
+                user_ref = db.collection('users').document(current_user.id)
+                user_ref.update({
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'phone': phone,
+                    'address': address,
+                    'updated_at': firestore.SERVER_TIMESTAMP
+                })
+
+                flash("Profile updated successfully!", 'success')
+                return redirect(url_for('account'))
+            except Exception as e:
+                flash(f"Error updating profile: {str(e)}", 'error')
+        else:
+            flash("Database not available.", 'error')
+
+    # GET request: fetch current user data
+    user_data = {}
+    if db:
+        try:
+            user_doc = db.collection('users').document(current_user.id).get()
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+        except Exception as e:
+            flash(f"Error loading profile: {str(e)}", 'error')
+
+    return render_template('edit_profile.html', user=user_data)
+
+@app.route('/support', methods=['GET', 'POST'])
+@login_required
+def support():
+    if request.method == 'POST':
+        subject = request.form['subject']
+        category = request.form['category']
+        priority = request.form['priority']
+        description = request.form['description']
+
+        if db:
+            try:
+                ticket_data = {
+                    'user_id': current_user.id,
+                    'user_email': current_user.email,
+                    'subject': subject,
+                    'category': category,
+                    'priority': priority,
+                    'description': description,
+                    'status': 'open',
+                    'created_at': firestore.SERVER_TIMESTAMP,
+                    'updated_at': firestore.SERVER_TIMESTAMP,
+                    'responses': []
+                }
+                ticket_ref = db.collection('support_tickets').add(ticket_data)
+                ticket_id = ticket_ref[1].id
+
+                # Send confirmation email to user
+                send_support_ticket_confirmation(current_user.email, ticket_id, subject)
+
+                # Send notification email to admin
+                send_admin_support_notification(ticket_id, subject, category, priority, current_user.email)
+
+                flash(f'Support ticket created successfully! Ticket ID: {ticket_id[:8].upper()}. A confirmation email has been sent to your inbox.', 'success')
+                return redirect(url_for('support'))
+            except Exception as e:
+                flash(f'Error creating support ticket: {str(e)}', 'error')
+        else:
+            flash('Database not available.', 'error')
+
+    # Fetch user's existing tickets
+    user_tickets = []
+    if db:
+        try:
+            tickets_ref = db.collection('support_tickets').where('user_id', '==', current_user.id).order_by('created_at', direction=firestore.Query.DESCENDING)
+            tickets = tickets_ref.stream()
+            for ticket in tickets:
+                ticket_data = ticket.to_dict()
+                ticket_data['id'] = ticket.id
+                user_tickets.append(ticket_data)
+        except Exception as e:
+            print(f"Error fetching user tickets: {str(e)}")
+
+    return render_template('support.html', tickets=user_tickets)
+
+@app.route('/admin/support')
+@login_required
+def admin_support():
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    # Fetch all support tickets
+    all_tickets = []
+    if db:
+        try:
+            tickets_ref = db.collection('support_tickets').order_by('created_at', direction=firestore.Query.DESCENDING)
+            tickets = tickets_ref.stream()
+            for ticket in tickets:
+                ticket_data = ticket.to_dict()
+                ticket_data['id'] = ticket.id
+                all_tickets.append(ticket_data)
+        except Exception as e:
+            print(f"Error fetching support tickets: {str(e)}")
+            flash("Error loading support tickets.", 'error')
+
+    return render_template('admin_support.html', tickets=all_tickets)
+
+@app.route('/admin/support/<ticket_id>', methods=['GET', 'POST'])
+@login_required
+def admin_support_ticket(ticket_id):
+    if not current_user.is_admin():
+        flash("Access denied. Admin privileges required.", 'error')
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        response = request.form['response']
+        new_status = request.form.get('status')
+
+        if db:
+            try:
+                ticket_ref = db.collection('support_tickets').document(ticket_id)
+                ticket_doc = ticket_ref.get()
+
+                if ticket_doc.exists:
+                    ticket_data = ticket_doc.to_dict()
+                    responses = ticket_data.get('responses', [])
+
+                    # Add new response
+                    responses.append({
+                        'responder_id': current_user.id,
+                        'responder_email': current_user.email,
+                        'response': response,
+                        'timestamp': firestore.SERVER_TIMESTAMP,
+                        'is_admin': True
+                    })
+
+                    update_data = {
+                        'responses': responses,
+                        'updated_at': firestore.SERVER_TIMESTAMP
+                    }
+
+                    if new_status:
+                        update_data['status'] = new_status
+
+                    ticket_ref.update(update_data)
+                    flash('Response added successfully!', 'success')
+                else:
+                    flash('Ticket not found.', 'error')
+            except Exception as e:
+                flash(f'Error adding response: {str(e)}', 'error')
+
+        return redirect(url_for('admin_support_ticket', ticket_id=ticket_id))
+
+    # GET request: fetch ticket details
+    ticket = None
+    if db:
+        try:
+            ticket_doc = db.collection('support_tickets').document(ticket_id).get()
+            if ticket_doc.exists:
+                ticket = ticket_doc.to_dict()
+                ticket['id'] = ticket_id
+        except Exception as e:
+            flash(f'Error fetching ticket: {str(e)}', 'error')
+
+    if not ticket:
+        flash('Ticket not found.', 'error')
+        return redirect(url_for('admin_support'))
+
+    return render_template('admin_support_ticket.html', ticket=ticket)
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

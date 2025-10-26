@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Admin Support Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        .admin-support-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .support-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .tickets-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .tickets-table th, .tickets-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .tickets-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        .tickets-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .status-open { background-color: #ffc107; color: #212529; }
+        .status-in-progress { background-color: #17a2b8; color: white; }
+        .status-resolved { background-color: #28a745; color: white; }
+        .status-closed { background-color: #6c757d; color: white; }
+        .priority-high { color: #dc3545; font-weight: bold; }
+        .priority-medium { color: #ffc107; font-weight: bold; }
+        .priority-low { color: #28a745; font-weight: bold; }
+        .action-btn {
+            padding: 6px 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .view-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        .view-btn:hover {
+            background-color: #0056b3;
+        }
+        .ticket-subject {
+            font-weight: 600;
+            color: #333;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .ticket-description {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #666;
+        }
+        .user-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .no-tickets {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-style: italic;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .filter-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-form select, .filter-form input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .filter-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .admin-support-container {
+                padding: 10px;
+            }
+            .support-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            .tickets-table {
+                font-size: 14px;
+            }
+            .tickets-table th, .tickets-table td {
+                padding: 10px 8px;
+            }
+            .filter-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
+            <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'Admin' }}</a>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-support-container">
+            <div class="support-header">
+                <a href="{{ url_for('admin') }}" style="text-decoration: none; color: #666; font-size: 18px;">← Back to Admin Panel</a>
+                <h2>Support Ticket Management</h2>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ tickets|length }}</div>
+                    <div class="stat-label">Total Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ tickets|selectattr('status', 'equalto', 'open')|list|length }}</div>
+                    <div class="stat-label">Open Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ tickets|selectattr('status', 'equalto', 'in_progress')|list|length }}</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ tickets|selectattr('status', 'equalto', 'resolved')|list|length + tickets|selectattr('status', 'equalto', 'closed')|list|length }}</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <form class="filter-form" method="GET">
+                    <select name="status">
+                        <option value="">All Status</option>
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                    <select name="priority">
+                        <option value="">All Priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <select name="category">
+                        <option value="">All Categories</option>
+                        <option value="account">Account Issues</option>
+                        <option value="orders">Order Problems</option>
+                        <option value="products">Product Questions</option>
+                        <option value="payment">Payment Issues</option>
+                        <option value="shipping">Shipping & Delivery</option>
+                        <option value="technical">Technical Support</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <button type="submit" class="filter-btn">Filter</button>
+                </form>
+            </div>
+
+            {% if tickets %}
+            <table class="tickets-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Subject</th>
+                        <th>User</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td><code>{{ ticket.id[:8].upper() }}</code></td>
+                        <td>
+                            <div class="ticket-subject">{{ ticket.subject }}</div>
+                        </td>
+                        <td>
+                            <div class="user-info">{{ ticket.user_email }}</div>
+                        </td>
+                        <td>{{ ticket.category|title }}</td>
+                        <td><span class="priority-{{ ticket.priority }}">{{ ticket.priority|title }}</span></td>
+                        <td>
+                            <span class="ticket-status status-{{ ticket.status|replace('_', '-') }}">{{ ticket.status|replace('_', ' ')|title }}</span>
+                        </td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_support_ticket', ticket_id=ticket.id) }}" class="action-btn view-btn">View & Respond</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-tickets">
+                <h3>No Support Tickets</h3>
+                <p>There are currently no support tickets in the system. When customers submit support requests, they will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

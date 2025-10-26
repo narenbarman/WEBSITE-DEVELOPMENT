@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Customer Support</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        .support-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .support-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .support-form, .tickets-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        .tickets-list {
+            margin-top: 20px;
+        }
+        .ticket-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .ticket-subject {
+            font-weight: 600;
+            color: #333;
+        }
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-open { background-color: #ffc107; color: #212529; }
+        .status-in-progress { background-color: #17a2b8; color: white; }
+        .status-resolved { background-color: #28a745; color: white; }
+        .status-closed { background-color: #6c757d; color: white; }
+        .ticket-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .ticket-description {
+            color: #555;
+            line-height: 1.5;
+        }
+        .no-tickets {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        .priority-high { color: #dc3545; font-weight: bold; }
+        .priority-medium { color: #ffc107; font-weight: bold; }
+        .priority-low { color: #28a745; font-weight: bold; }
+        @media (max-width: 768px) {
+            .support-container {
+                padding: 10px;
+            }
+            .support-form, .tickets-section {
+                padding: 20px;
+            }
+            .ticket-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('cart') }}" style="background-color: #ffc107; color: black;">🛒 Cart{% if cart_count > 0 %} ({{ cart_count }}){% endif %}</a>
+                <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+                <a href="{{ url_for('logout') }}" style="background-color: #6c757d; color: white;">Logout</a>
+            {% else %}
+                <a href="{{ url_for('account') }}">👤 Account</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="support-container">
+            <div class="support-header">
+                <h2>Customer Support</h2>
+                <p>Need help? Submit a support ticket and our team will assist you.</p>
+            </div>
+
+            <div class="support-form">
+                <h3>Submit a Support Ticket</h3>
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="subject">Subject:</label>
+                        <input type="text" id="subject" name="subject" required placeholder="Brief description of your issue">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select a category</option>
+                            <option value="account">Account Issues</option>
+                            <option value="orders">Order Problems</option>
+                            <option value="products">Product Questions</option>
+                            <option value="payment">Payment Issues</option>
+                            <option value="shipping">Shipping & Delivery</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority:</label>
+                        <select id="priority" name="priority" required>
+                            <option value="low">Low - General inquiry</option>
+                            <option value="medium" selected>Medium - Need assistance soon</option>
+                            <option value="high">High - Urgent issue</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description" required placeholder="Please provide detailed information about your issue. Include any relevant order numbers, error messages, or steps to reproduce the problem."></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Submit Support Ticket</button>
+                </form>
+            </div>
+
+            <div class="tickets-section">
+                <h3>Your Support Tickets</h3>
+                {% if tickets %}
+                <div class="tickets-list">
+                    {% for ticket in tickets %}
+                    <div class="ticket-item">
+                        <div class="ticket-header">
+                            <div class="ticket-subject">{{ ticket.subject }}</div>
+                            <span class="ticket-status status-{{ ticket.status|replace('_', '-') }}">{{ ticket.status|replace('_', ' ')|title }}</span>
+                        </div>
+                        <div class="ticket-meta">
+                            <strong>Category:</strong> {{ ticket.category|title }} |
+                            <strong>Priority:</strong> <span class="priority-{{ ticket.priority }}">{{ ticket.priority|title }}</span> |
+                            <strong>Created:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else 'N/A' }}
+                        </div>
+                        <div class="ticket-description">
+                            {{ ticket.description|truncate(200) }}
+                        </div>
+                        {% if ticket.responses %}
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <strong>Latest Response:</strong>
+                            <div style="margin-top: 5px; color: #666;">
+                                {{ ticket.responses[-1].response|truncate(150) }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-tickets">
+                    <h4>No Support Tickets Yet</h4>
+                    <p>You haven't submitted any support tickets. If you need assistance, please use the form above to create a new ticket.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -439,10 +439,14 @@ button:hover {
     color: #155724;
 }
 
-.order-status.cancelled, .bill-status.cancelled,
-.order-status.closed, .bill-status.closed {
+.order-status.cancelled, .bill-status.cancelled {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.order-status.closed, .bill-status.closed {
+    background-color: #e2e3e5;
+    color: #383d41;
 }
 
 .status-option.current {

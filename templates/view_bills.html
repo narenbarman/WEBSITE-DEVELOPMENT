@@ -87,7 +87,7 @@
         }
 
         function updateStatus(billId, currentStatus) {
-            const statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed'];
+            const statuses = ['pending', 'processed', 'waiting_for_payment', 'bill_generated', 'delivered', 'closed', 'cancelled'];
             const currentIndex = statuses.indexOf(currentStatus);
 
             // Create a modal for status selection
@@ -111,18 +111,32 @@
                 const isCurrent = status === currentStatus;
                 const isRecommended = index === currentIndex + 1; // Next logical step
 
+                // Define colors for each status
+                const statusColors = {
+                    'pending': { bg: '#fff3cd', border: '#ffc107', text: '#856404' },
+                    'processed': { bg: '#cce5ff', border: '#007bff', text: '#004085' },
+                    'waiting_for_payment': { bg: '#d1ecf1', border: '#17a2b8', text: '#0c5460' },
+                    'bill_generated': { bg: '#d4edda', border: '#28a745', text: '#155724' },
+                    'delivered': { bg: '#f8fff9', border: '#28a745', text: '#155724' },
+                    'closed': { bg: '#f8d7da', border: '#dc3545', text: '#721c24' },
+                    'cancelled': { bg: '#f8d7da', border: '#dc3545', text: '#721c24' }
+                };
+
+                const colors = statusColors[status] || { bg: '#f8f9fa', border: '#ddd', text: '#333' };
+
                 optionsHtml += `
                     <button onclick="selectStatus('${billId}', '${status}')" class="status-option ${isCurrent ? 'current' : ''} ${isRecommended ? 'recommended' : ''}" style="
                         display: block;
                         width: 100%;
                         padding: 12px;
                         margin: 5px 0;
-                        border: 2px solid ${isCurrent ? '#007bff' : isRecommended ? '#28a745' : '#ddd'};
-                        background: ${isCurrent ? '#e7f3ff' : isRecommended ? '#f8fff9' : 'white'};
+                        border: 2px solid ${isCurrent ? '#007bff' : isRecommended ? '#28a745' : colors.border};
+                        background: ${isCurrent ? '#e7f3ff' : isRecommended ? '#f8fff9' : colors.bg};
                         border-radius: 6px;
                         cursor: pointer;
                         text-align: left;
                         font-weight: ${isRecommended ? 'bold' : 'normal'};
+                        color: ${colors.text};
                     ">
                         ${displayStatus} ${isCurrent ? '(Current)' : isRecommended ? '(Recommended)' : ''}
                     </button>

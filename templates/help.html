@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Help & Support</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        .help-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .help-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .help-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        .help-section h4 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .help-section p {
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .help-section ul {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+        .help-section li {
+            margin-bottom: 5px;
+        }
+        .contact-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .faq-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .faq-question {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .faq-answer {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('cart') }}" style="background-color: #ffc107; color: black;">🛒 Cart{% if cart_count > 0 %} ({{ cart_count }}){% endif %}</a>
+                <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
+                <a href="{{ url_for('logout') }}" style="background-color: #6c757d; color: white;">Logout</a>
+            {% else %}
+                <a href="{{ url_for('account') }}">👤 Account</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        <div class="help-container">
+            <h2>Help & Support Center</h2>
+            <p>Welcome to Barman Store's Help & Support Center. Here you'll find answers to common questions and information about our services.</p>
+
+            <div class="help-section">
+                <h3>Getting Started</h3>
+                <p>If you're new to Barman Store, here's how to get started:</p>
+                <ul>
+                    <li><strong>Create an Account:</strong> Click on "Account" in the navigation and register with your details.</li>
+                    <li><strong>Browse Products:</strong> Visit our "Catalog" to see all available products.</li>
+                    <li><strong>Add to Cart:</strong> Click "Add to Cart" on any product you want to purchase.</li>
+                    <li><strong>Checkout:</strong> Review your cart and proceed to checkout when ready.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Shopping Guide</h3>
+                <h4>How to Shop</h4>
+                <ol>
+                    <li>Log in to your account</li>
+                    <li>Browse our product catalog</li>
+                    <li>Add items to your cart</li>
+                    <li>Review your cart and proceed to checkout</li>
+                    <li>Your order will be processed and you'll receive confirmation</li>
+                </ol>
+
+                <h4>Payment Information</h4>
+                <p>We currently support cash on delivery for all orders. Payment is collected when your order is delivered.</p>
+            </div>
+
+            <div class="help-section">
+                <h4>Frequently Asked Questions</h4>
+
+                <div class="faq-item">
+                    <div class="faq-question">How do I create an account?</div>
+                    <div class="faq-answer">Click on "Account" in the navigation bar, then click "Register here" to create a new account. You'll need to provide your name, email, phone number, address, and password.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">How do I add items to my cart?</div>
+                    <div class="faq-answer">Browse the catalog, find the product you want, specify the quantity, and click "Add to Cart". You can view your cart by clicking the cart icon in the navigation.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">How do I place an order?</div>
+                    <div class="faq-answer">After adding items to your cart, click on the cart link in the navigation. Review your items, then click "Checkout" to place your order.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">What payment methods do you accept?</div>
+                    <div class="faq-answer">Currently, we accept cash on delivery. Payment is collected when your order is delivered to your address.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">How can I track my order?</div>
+                    <div class="faq-answer">You can view your order status by logging into your account and checking your order history. Admins can also view all orders in the admin panel.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">How do I contact customer support?</div>
+                    <div class="faq-answer">For any questions or issues, please contact our support team using the information provided below.</div>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>Admin Features</h3>
+                <p>If you have administrator privileges, you have access to additional features:</p>
+                <ul>
+                    <li><strong>Manage Products:</strong> Add, edit, and delete products from the catalog</li>
+                    <li><strong>Manage Users:</strong> View and edit user accounts</li>
+                    <li><strong>View Orders:</strong> See all customer orders and update their status</li>
+                    <li><strong>Purchase Register:</strong> Track supplier purchases and inventory</li>
+                    <li><strong>Bill Management:</strong> Generate and print bills for orders</li>
+                </ul>
+                <p>To access admin features, log in with an admin account and look for the "Admin Panel" link.</p>
+            </div>
+
+            <div class="help-section contact-info">
+                <h3>Contact Information</h3>
+                <p><strong>Store Address:</strong> Barman Store, Your Local Departmental Store</p>
+                <p><strong>Phone:</strong> {{ SUPPORT_PHONE }}</p>
+                <p><strong>Email:</strong> {{ SUPPORT_EMAIL }}</p>
+                <p><strong>Business Hours:</strong> {{ BUSINESS_HOURS }}</p>
+                <p><strong>Emergency Contact:</strong> For urgent matters, please call {{ SUPPORT_PHONE }}</p>
+                <p><strong>Support Tickets:</strong> Submit support tickets through your account for detailed assistance</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Technical Support</h3>
+                <p>If you're experiencing technical issues with our website:</p>
+                <ul>
+                    <li>Try refreshing the page</li>
+                    <li>Clear your browser cache and cookies</li>
+                    <li>Make sure you're using a modern web browser</li>
+                    <li>Check your internet connection</li>
+                </ul>
+                <p>If problems persist, please contact our technical support team.</p>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

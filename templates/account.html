@@ -78,7 +78,9 @@
         <nav>
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
             {% if current_user.is_authenticated %}
+                <a href="{{ url_for('support') }}">Support</a>
                 <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'User' }}</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
@@ -104,10 +106,20 @@
                     <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
                         <h4 style="margin-top: 0; color: #333;">Your Profile Information:</h4>
                         <p><strong>Email:</strong> {{ current_user.email }}</p>
-                        <p><strong>Role:</strong> {{ 'Administrator' if current_user.is_admin() else 'User' }}</p>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">For detailed profile information, please contact support.</p>
+                        <p><strong>Role:</strong> {{ 'Administrator' if current_user.is_admin() else 'Customer' }}</p>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Keep your profile information up to date for better service.</p>
                     </div>
 
+
+                    <!-- Account Management Options -->
+                    <div style="margin-top: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border-left: 4px solid #007bff;">
+                        <h4 style="margin-top: 0; color: #007bff;">Account Management</h4>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                            <a href="{{ url_for('edit_profile') }}" style="background-color: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">✏️ Edit Profile</a>
+                            <a href="{{ url_for('forgot_password') }}" style="background-color: #ffc107; color: black; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">🔒 Reset Password</a>
+                            <a href="{{ url_for('support') }}" style="background-color: #17a2b8; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">🎧 Support</a>
+                        </div>
+                    </div>
 
                     <div style="margin-top: 20px;">
                         <a href="{{ url_for('catalog') }}" class="btn" style="display: inline-block; margin-right: 10px;">Browse Catalog</a>
@@ -122,6 +134,24 @@
             <div class="account-container">
                 <div class="account-section">
                     <h3>Login</h3>
+
+                    <!-- Social Login Buttons -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <a href="{{ url_for('login_google') }}" style="display: inline-block; background-color: #db4437; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
+                                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;">
+                                Login with Google
+                            </a>
+                            <a href="{{ url_for('login_facebook') }}" style="display: inline-block; background-color: #4267B2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                                <span style="font-size: 16px; margin-right: 8px;">f</span>
+                                Login with Facebook
+                            </a>
+                        </div>
+                        <div style="border-top: 1px solid #ddd; margin: 15px 0; position: relative;">
+                            <span style="background-color: white; padding: 0 10px; color: #666; font-size: 14px;">or</span>
+                        </div>
+                    </div>
+
                     <form method="POST">
                         <input type="hidden" name="login" value="1">
                         <div class="form-group">
@@ -137,10 +167,31 @@
                     <div class="toggle-link">
                         <a href="#" onclick="showRegister()">Don't have an account? Register here</a>
                     </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="{{ url_for('forgot_password') }}" style="color: #007bff; text-decoration: none; font-size: 14px;">Forgot your password?</a>
+                    </div>
                 </div>
 
                 <div class="account-section register-section" id="registerSection">
                     <h3>Register</h3>
+
+                    <!-- Social Login Buttons for Registration -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <a href="{{ url_for('login_google') }}" style="display: inline-block; background-color: #db4437; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
+                                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 8px;">
+                                Sign up with Google
+                            </a>
+                            <a href="{{ url_for('login_facebook') }}" style="display: inline-block; background-color: #4267B2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                                <span style="font-size: 16px; margin-right: 8px;">f</span>
+                                Sign up with Facebook
+                            </a>
+                        </div>
+                        <div style="border-top: 1px solid #ddd; margin: 15px 0; position: relative;">
+                            <span style="background-color: white; padding: 0 10px; color: #666; font-size: 14px;">or</span>
+                        </div>
+                    </div>
+
                     <form method="POST">
                         <input type="hidden" name="register" value="1">
                         <div class="form-group">

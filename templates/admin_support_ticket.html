@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barman Store - Support Ticket Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+        .ticket-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .ticket-header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .ticket-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .ticket-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .meta-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+        }
+        .meta-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .meta-value {
+            color: #333;
+            margin-top: 5px;
+        }
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .status-open { background-color: #ffc107; color: #212529; }
+        .status-in-progress { background-color: #17a2b8; color: white; }
+        .status-resolved { background-color: #28a745; color: white; }
+        .status-closed { background-color: #6c757d; color: white; }
+        .priority-high { color: #dc3545; font-weight: bold; }
+        .priority-medium { color: #ffc107; font-weight: bold; }
+        .priority-low { color: #28a745; font-weight: bold; }
+        .ticket-description {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 30px;
+        }
+        .responses-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .response-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .responder-info {
+            font-weight: 600;
+            color: #333;
+        }
+        .response-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .response-admin {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .response-user {
+            color: #007bff;
+            font-weight: bold;
+        }
+        .response-content {
+            line-height: 1.6;
+            color: #555;
+        }
+        .response-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .no-responses {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        @media (max-width: 768px) {
+            .ticket-container {
+                padding: 10px;
+            }
+            .ticket-header, .responses-section, .response-form {
+                padding: 20px;
+            }
+            .ticket-meta {
+                grid-template-columns: 1fr;
+            }
+            .response-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
+            <a href="{{ url_for('account') }}" style="background-color: #28a745; color: white;">👤 {{ current_user.email.split('@')[0] if current_user.email else 'Admin' }}</a>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="ticket-container">
+            <div style="margin-bottom: 20px;">
+                <a href="{{ url_for('admin_support') }}" style="text-decoration: none; color: #666; font-size: 18px;">← Back to Support Tickets</a>
+            </div>
+
+            <div class="ticket-header">
+                <div class="ticket-title">{{ ticket.subject }}</div>
+                <div class="ticket-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Ticket ID</div>
+                        <div class="meta-value"><code>{{ ticket.id[:8].upper() }}</code></div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Status</div>
+                        <div class="meta-value">
+                            <span class="ticket-status status-{{ ticket.status|replace('_', '-') }}">{{ ticket.status|replace('_', ' ')|title }}</span>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Priority</div>
+                        <div class="meta-value">
+                            <span class="priority-{{ ticket.priority }}">{{ ticket.priority|title }}</span>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Category</div>
+                        <div class="meta-value">{{ ticket.category|title }}</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">User</div>
+                        <div class="meta-value">{{ ticket.user_email }}</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Created</div>
+                        <div class="meta-value">{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket-description">
+                <h4>Issue Description</h4>
+                <p>{{ ticket.description }}</p>
+            </div>
+
+            <div class="responses-section">
+                <h3>Conversation History</h3>
+                {% if ticket.responses %}
+                    {% for response in ticket.responses %}
+                    <div class="response-item">
+                        <div class="response-header">
+                            <div class="responder-info {{ 'response-admin' if response.is_admin else 'response-user' }}">
+                                {% if response.is_admin %}
+                                    Admin: {{ response.responder_email.split('@')[0] }}
+                                {% else %}
+                                    Customer: {{ response.responder_email.split('@')[0] }}
+                                {% endif %}
+                            </div>
+                            <div class="response-time">
+                                {{ response.timestamp.strftime('%Y-%m-%d %H:%M') if response.timestamp else 'N/A' }}
+                            </div>
+                        </div>
+                        <div class="response-content">
+                            {{ response.response }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-responses">
+                        <p>No responses yet. This is the first message in this support ticket.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="response-form">
+                <h3>Add Response</h3>
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="status">Update Status (Optional):</label>
+                        <select id="status" name="status">
+                            <option value="">Keep Current Status</option>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="response">Your Response:</label>
+                        <textarea id="response" name="response" required placeholder="Type your response to the customer here..."></textarea>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-success">Send Response</button>
+                        <a href="{{ url_for('admin_support') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
