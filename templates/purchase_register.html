@@ -156,22 +156,92 @@
                 <a href="{{ url_for('add_purchase') }}" class="add-purchase-btn">➕ Add Purchase Bill</a>
             </div>
 
+            <!-- Filters Section -->
+            <div class="filters-section" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #333;">Filters & Reports</h3>
+                <form method="GET" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="supplier" style="display: block; margin-bottom: 5px; font-weight: 600;">Supplier:</label>
+                        <select name="supplier" id="supplier" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">All Suppliers</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier }}" {% if filters.supplier == supplier %}selected{% endif %}>{{ supplier }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label for="date_from" style="display: block; margin-bottom: 5px; font-weight: 600;">From Date:</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label for="date_to" style="display: block; margin-bottom: 5px; font-weight: 600;">To Date:</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label for="sort_by" style="display: block; margin-bottom: 5px; font-weight: 600;">Sort By:</label>
+                        <select name="sort_by" id="sort_by" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="created_at" {% if filters.sort_by == 'created_at' %}selected{% endif %}>Date Created</option>
+                            <option value="supplier_name" {% if filters.sort_by == 'supplier_name' %}selected{% endif %}>Supplier Name</option>
+                            <option value="purchase_date" {% if filters.sort_by == 'purchase_date' %}selected{% endif %}>Purchase Date</option>
+                            <option value="grand_total" {% if filters.sort_by == 'grand_total' %}selected{% endif %}>Amount</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label for="sort_order" style="display: block; margin-bottom: 5px; font-weight: 600;">Order:</label>
+                        <select name="sort_order" id="sort_order" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="desc" {% if filters.sort_order == 'desc' %}selected{% endif %}>Descending</option>
+                            <option value="asc" {% if filters.sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Apply Filters</button>
+                        <a href="{{ url_for('purchase_register') }}" style="background: #6c757d; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; display: inline-block;">Clear</a>
+                    </div>
+                </form>
+            </div>
+
             <div class="stats">
                 <div class="stat-card">
                     <div class="stat-number">{{ purchase_bills|length }}</div>
                     <div class="stat-label">Total Bills</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">₹{{ "%.2f"|format(purchase_bills|map(attribute='grand_total')|sum) }}</div>
+                    <div class="stat-number">₹{{ "%.2f"|format(total_grand_total) }}</div>
                     <div class="stat-label">Total Amount Spent</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">₹{{ "%.2f"|format(purchase_bills|map(attribute='balance')|sum) }}</div>
+                    <div class="stat-number">₹{{ "%.2f"|format(total_balance) }}</div>
                     <div class="stat-label">Total Outstanding Balance</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number">₹{{ "%.2f"|format(purchase_bills|map(attribute='grand_total')|list|sort|last if purchase_bills else 0) }}</div>
                     <div class="stat-label">Highest Bill Amount</div>
+                </div>
+            </div>
+
+            <!-- Summary Report -->
+            <div class="report-summary" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #333;">Purchase Summary Report</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #28a745;">₹{{ "%.2f"|format(total_amount) }}</div>
+                        <div style="color: #666;">Total Amount (Excl. GST)</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #17a2b8;">₹{{ "%.2f"|format(total_gst) }}</div>
+                        <div style="color: #666;">Total GST Paid</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #ffc107;">₹{{ "%.2f"|format(total_grand_total - total_balance) }}</div>
+                        <div style="color: #666;">Total Paid</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: {% if total_balance > 0 %}#dc3545{% else %}#28a745{% endif %};">₹{{ "%.2f"|format(total_balance) }}</div>
+                        <div style="color: #666;">Outstanding Balance</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="exportReport()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">📊 Export Report</button>
                 </div>
             </div>
 
@@ -195,7 +265,7 @@
                     <tr>
                         <td>{{ bill.bill_number or 'N/A' }}</td>
                         <td>{{ bill.supplier_name }}</td>
-                        <td>{{ bill.purchase_date }}</td>
+                        <td>{{ bill.purchase_date.split('-')[2] }}-{{ bill.purchase_date.split('-')[1] }}-{{ bill.purchase_date.split('-')[0] }}</td>
                         <td>₹{{ "%.2f"|format(bill.total_amount) }}</td>
                         <td>₹{{ "%.2f"|format(bill.total_gst) }}</td>
                         <td>
@@ -206,6 +276,10 @@
                         <td>
                             <div style="display: flex; gap: 5px; align-items: center;">
                                 <button onclick="showBillDetails('{{ bill.id }}')" class="action-btn" style="background-color: #17a2b8; color: white;">View Details</button>
+                                <a href="{{ url_for('view_purchase_payments', purchase_id=bill.id) }}" class="action-btn" style="background-color: #ffc107; color: #000;">💰 Payments</a>
+                                {% if bill.balance > 0 %}
+                                <a href="{{ url_for('add_payment', purchase_id=bill.id) }}" class="action-btn" style="background-color: #28a745; color: white;">➕ Add Payment</a>
+                                {% endif %}
                                 <form method="POST" action="{{ url_for('delete_purchase', purchase_id=bill.id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this purchase bill?')">
                                     <button type="submit" class="action-btn delete-btn">Delete</button>
                                 </form>
@@ -234,10 +308,32 @@
         </div>
 
         <script>
+            // Store bill data globally
+            const purchaseBillsData = {{ purchase_bills|tojson|safe }};
+
+            function exportReport() {
+                // Create CSV content
+                let csvContent = "Bill Number,Supplier,Purchase Date,Total Amount,GST Amount,Grand Total,Payment Made,Balance\n";
+
+                purchaseBillsData.forEach(bill => {
+                    csvContent += `"${bill.bill_number || 'N/A'}","${bill.supplier_name}","${bill.purchase_date}","${bill.total_amount}","${bill.total_gst}","${bill.grand_total}","${bill.payment_made}","${bill.balance}"\n`;
+                });
+
+                // Create and download CSV file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `purchase_report_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
             function showBillDetails(billId) {
                 // Find the bill data
-                const bills = {{ purchase_bills|tojson }};
-                const bill = bills.find(b => b.id === billId);
+                const bill = purchaseBillsData.find(b => b.id === billId);
 
                 if (bill) {
                     let detailsHtml = `

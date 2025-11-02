@@ -46,8 +46,8 @@
             <label for="brand">Brand:</label>
             <input type="text" id="brand" name="brand" value="{{ product.brand }}"><br>
 
-            <label for="weight">Weight (kg):</label>
-            <input type="number" id="weight" name="weight" step="0.01" min="0" value="{{ product.weight }}"><br>
+            <label for="weight">Specification:</label>
+            <input type="text" id="weight" name="weight" value="{{ product.weight }}"><br>
 
             <label for="dimensions">Dimensions (L x W x H in cm):</label>
             <input type="text" id="dimensions" name="dimensions" value="{{ product.dimensions }}"><br>
@@ -57,6 +57,9 @@
 
             <label for="stock_quantity">Stock Quantity:</label>
             <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="{{ product.stock_quantity }}"><br>
+
+            <label for="hsn">HSN Code:</label>
+            <input type="text" id="hsn" name="hsn" value="{{ product.hsn }}"><br>
 
             <label for="sku">SKU (Stock Keeping Unit):</label>
             <input type="text" id="sku" name="sku" value="{{ product.sku }}"><br>

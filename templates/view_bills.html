@@ -43,7 +43,17 @@
             <div class="bill-card">
                 <div class="bill-header">
                     <h3>Bill #{{ bill.id[:8].upper() }}</h3>
-                    <span class="bill-date">{{ bill.date }}</span>
+                    {% if bill.date and bill.date|length >= 10 %}
+                        {% set date_str = bill.date[:10] %}
+                        {% if date_str.count('-') == 2 %}
+                            {% set parts = date_str.split('-') %}
+                            <span class="bill-date">{{ parts[2] }}-{{ parts[1] }}-{{ parts[0] }}</span>
+                        {% else %}
+                            <span class="bill-date">Invalid Date Format</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="bill-date">No Date</span>
+                    {% endif %}
                     <span class="bill-status {{ bill.status.lower() }}">{{ bill.status.replace('_', ' ').title() }}</span>
                 </div>
                 <div class="bill-customer">
@@ -151,7 +161,7 @@
                         ${optionsHtml}
                     </div>
                     <div style="text-align: right;">
-                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        <button onclick="window.location.reload()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Cancel</button>
                     </div>
                 </div>
             `;

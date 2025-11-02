@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Transaction - {{ customer.first_name }} {{ customer.last_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        header {
+            height: 10%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        main {
+            height: 70%;
+            position: fixed;
+            top: 10%;
+            bottom: 20%;
+            left: 0;
+            right: 0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .footer-section {
+            height: 20%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .edit-form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0;
+        }
+        .form-card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f8f9fa;
+            padding-bottom: 20px;
+        }
+        .transaction-type {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .debit-type {
+            background: #dc3545;
+        }
+        .credit-type {
+            background: #28a745;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        .form-actions {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #f8f9fa;
+        }
+        .btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            header, main, .footer-section {
+                height: auto;
+                position: static;
+                overflow: visible;
+            }
+
+            html, body {
+                height: auto;
+                overflow: visible;
+            }
+
+            main {
+                padding: 20px;
+            }
+
+            .edit-form-container {
+                margin: 10px;
+            }
+            .form-card {
+                padding: 20px;
+            }
+            .form-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        .current-amount {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .debit-amount {
+            background: #fff5f5;
+            color: #dc3545;
+            border: 2px solid #fed7d7;
+        }
+        .credit-amount {
+            background: #f0fff4;
+            color: #28a745;
+            border: 2px solid #c6f6d5;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
+            <a href="{{ url_for('admin') }}" style="background-color: #28a745; color: white;">← Back to Admin</a>
+        </nav>
+        <div class="edit-form-container">
+            <div class="back-link">
+                <a href="{{ url_for('customer_history', customer_id=customer.id) }}">← Back to {{ customer.first_name }} {{ customer.last_name }}'s History</a>
+            </div>
+
+    </header>
+
+    <main>
+       
+
+            <div class="form-card">
+                <div class="form-header">
+                    <h1>Edit Transaction</h1>
+                    <span class="transaction-type {{ 'debit-type' if transaction.type == 'debit' else 'credit-type' }}">
+                        {{ transaction.type.title() }}
+                    </span>
+                </div>
+
+                <div class="current-amount {{ 'debit-amount' if transaction.type == 'debit' else 'credit-amount' }}">
+                    Current Amount: ₹{{ "%.2f"|format(transaction.amount) }}
+                </div>
+
+                <form method="POST" id="editTransactionForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="form-group">
+                        <label for="amount">Amount (₹)</label>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0.01"
+                               value="{{ "%.2f"|format(transaction.amount) }}" required>
+                        <div class="error-message" id="amountError">Please enter a valid amount greater than 0.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" placeholder="Enter transaction description (optional)...">{{ transaction.description }}</textarea>
+                        <div class="error-message" id="descriptionError">Description is required.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bill_no">Bill Number (Optional)</label>
+                        <input type="text" id="bill_no" name="bill_no" placeholder="Enter bill number if applicable"
+                               value="{{ transaction.bill_no or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date"
+                               value="{% if transaction.date %}{{ transaction.date.strftime('%Y-%m-%d') if hasattr(transaction.date, 'strftime') else transaction.date }}{% endif %}" required>
+                        <div class="error-message" id="dateError">Please select a valid date.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modification_reason">Reason for Modification *</label>
+                        <textarea id="modification_reason" name="modification_reason" placeholder="Please provide a detailed reason for this transaction modification..." required></textarea>
+                        <div class="error-message" id="modificationReasonError">Modification reason is required.</div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="{{ url_for('customer_history', customer_id=customer.id) }}" class="btn btn-cancel">Cancel</a>
+                        <button type="submit" class="btn btn-submit">Update Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('editTransactionForm').addEventListener('submit', function(e) {
+            // Clear previous errors
+            document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
+
+            let isValid = true;
+
+            // Validate amount
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (!amount || amount <= 0) {
+                document.getElementById('amountError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Description is now optional - no validation required
+
+            // Validate date
+            const date = document.getElementById('date').value;
+            if (!date) {
+                document.getElementById('dateError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Validate modification reason
+            const modificationReason = document.getElementById('modification_reason').value.trim();
+            if (!modificationReason) {
+                document.getElementById('modificationReasonError').style.display = 'block';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    </script>
+
+    <div class="footer-section">
+        <div style="text-align: center; padding: 20px;">
+            <a href="{{ url_for('customer_history', customer_id=customer.id) }}" class="btn" style="background: #6c757d;">← Cancel & Back to Customer History</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -30,6 +30,9 @@
             border: 1px solid #ccc;
             border-radius: 3px;
         }
+        .product-row input[name="product_name_sku[]"] {
+            width: 200px;
+        }
         .remove-product {
             background-color: #dc3545;
             color: white;
@@ -99,28 +102,35 @@
 
             <div class="form-group">
                 <label for="purchase_date">Purchase Date:</label>
-                <input type="date" id="purchase_date" name="purchase_date" required>
+                <input type="date" id="purchase_date" name="purchase_date" required placeholder="DD/MM/YYYY">
             </div>
 
             <h3>Products</h3>
             <div id="productsContainer">
                 <div class="product-row">
                     <div class="form-group">
-                        <label>Product:</label>
-                        <select name="product_id[]" required onchange="updateProductDetails(this)">
-                            <option value="">Select Product</option>
+                        <label>Product Name/SKU:</label>
+                        <input type="text" name="product_name_sku[]" list="productList" placeholder="Type or select product name/SKU" required onchange="calculateRow(this)">
+                        <datalist id="productList">
                             {% for product in products %}
-                            <option value="{{ product.id }}" data-price="{{ product.price }}" data-mrp="{{ product.price }}">{{ product.name }} ({{ product.sku if product.sku else 'No SKU' }})</option>
+                            <option value="{{ product.name }}{% if product.sku %} ({{ product.sku }}){% endif %}{% if product.weight %} - {{ product.weight }}{% endif %}">
                             {% endfor %}
-                        </select>
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label>MRP (₹):</label>
-                        <input type="number" name="mrp[]" step="0.01" min="0" class="mrp" onchange="calculateRow(this)">
+                        <input type="number" name="mrp[]" step="0.01" min="0" required onchange="calculateRow(this)">
                     </div>
                     <div class="form-group">
                         <label>QTY:</label>
                         <input type="number" name="quantity[]" min="1" required onchange="calculateRow(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Unit:</label>
+                        <input type="text" name="unit[]" list="unitList" placeholder="e.g., kg, pcs, ltr" onchange="calculateRow(this)">
+                        <datalist id="unitList">
+                            <!-- Will be populated by JavaScript -->
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label>Rate (₹):</label>
@@ -187,6 +197,8 @@
 
     <script>
         function updateProductDetails(selectElement) {
+            // This function is now deprecated since we're using text inputs
+            // Keeping for backward compatibility if needed
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             const price = selectedOption.getAttribute('data-price');
             const mrp = selectedOption.getAttribute('data-mrp');
@@ -251,19 +263,48 @@
             const firstRow = container.querySelector('.product-row');
             const newRow = firstRow.cloneNode(true);
 
-            // Clear input values
+            // Clear all input values
             newRow.querySelectorAll('input').forEach(input => {
                 if (input.type !== 'button') {
                     input.value = '';
                 }
             });
-            newRow.querySelector('select').selectedIndex = 0;
 
-            // Reset calculated fields
-            newRow.querySelector('.mrp').value = '0.00';
+            // Update datalist for new row
+            const productDatalist = newRow.querySelector('datalist');
+            if (productDatalist) {
+                productDatalist.id = 'productList_' + Date.now(); // Unique ID for each row
+                const input = newRow.querySelector('input[name="product_name_sku[]"]');
+                if (input) {
+                    input.setAttribute('list', productDatalist.id);
+                }
+            }
+
+            // Reset calculated fields to default values
+            newRow.querySelector('input[name="mrp[]"]').value = '';
+            newRow.querySelector('input[name="quantity[]"]').value = '';
+            newRow.querySelector('input[name="unit[]"]').value = '';
+            newRow.querySelector('input[name="rate[]"]').value = '';
+            newRow.querySelector('input[name="discount_percent[]"]').value = '0';
+            newRow.querySelector('input[name="gst_rate[]"]').value = '0';
             newRow.querySelector('.discount-amount').value = '0.00';
             newRow.querySelector('.taxable-amount').value = '0.00';
             newRow.querySelector('.row-total').value = '0.00';
+
+            // Update datalist for new row
+            const newDatalist = newRow.querySelector('datalist');
+            if (newDatalist) {
+                newDatalist.id = 'unitList_' + Date.now(); // Unique ID for each row
+                const input = newRow.querySelector('input[name="unit[]"]');
+                if (input) {
+                    input.setAttribute('list', newDatalist.id);
+                    // Copy options from main datalist
+                    const mainDatalist = document.getElementById('unitList');
+                    if (mainDatalist) {
+                        newDatalist.innerHTML = mainDatalist.innerHTML;
+                    }
+                }
+            }
 
             container.appendChild(newRow);
         }
@@ -281,7 +322,44 @@
         // Initialize calculations on page load
         document.addEventListener('DOMContentLoaded', function() {
             calculateBillSummary();
+            populateUnitDatalist();
         });
+
+        function populateUnitDatalist() {
+            // Get all unique units from existing purchase bills
+            fetch('/api/units')
+                .then(response => response.json())
+                .then(data => {
+                    const datalist = document.getElementById('unitList');
+                    datalist.innerHTML = ''; // Clear existing options
+
+                    // Add default common units
+                    const commonUnits = ['pcs', 'kg', 'g', 'ltr', 'ml', 'mtr', 'cm', 'dozen', 'box', 'pack', 'bottle', 'can', 'packet', 'roll', 'set', 'pair'];
+
+                    // Combine common units with previously used units
+                    const allUnits = [...new Set([...commonUnits, ...data.units])];
+
+                    allUnits.forEach(unit => {
+                        if (unit && unit.trim()) {
+                            const option = document.createElement('option');
+                            option.value = unit.trim();
+                            datalist.appendChild(option);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading units:', error);
+                    // Fallback to common units if API fails
+                    const datalist = document.getElementById('unitList');
+                    const commonUnits = ['pcs', 'kg', 'g', 'ltr', 'ml', 'mtr', 'cm', 'dozen', 'box', 'pack', 'bottle', 'can', 'packet', 'roll', 'set', 'pair'];
+                    datalist.innerHTML = '';
+                    commonUnits.forEach(unit => {
+                        const option = document.createElement('option');
+                        option.value = unit;
+                        datalist.appendChild(option);
+                    });
+                });
+        }
     </script>
 </body>
 </html>

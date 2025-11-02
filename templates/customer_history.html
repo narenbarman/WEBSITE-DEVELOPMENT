@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer History - {{ customer.first_name }} {{ customer.last_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal_styles.css') }}">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        header {
+            height: 10%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        main {
+            height: 70%;
+            position: fixed;
+            top: 10%;
+            bottom: 20%;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .footer-section {
+            height: 15%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .history-container {
+            height: 20%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+        }
+        .customer-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .customer-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        .customer-avatar {
+            flex-shrink: 0;
+        }
+        .avatar-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .customer-details {
+            flex: 1;
+        }
+        .customer-details h1 {
+            margin: 0 0 5px 0;
+            font-size: 22px;
+        }
+        .customer-phone {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .transactions-section {
+            max-height: calc(100vh - 350px); /* Adjust based on header/footer heights */
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .conversation-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .debit-message {
+            justify-content: flex-start;
+        }
+        .credit-message {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            max-width: 80%;
+            min-width: 300px;
+            padding: 15px;
+            border-radius: 18px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .debit {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+            color: #155724;
+            margin-right: 10px;
+        }
+        .debit::after {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 15px;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 10px solid #28a745;
+        }
+        .credit {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+            color: #721c24;
+            margin-left: 10px;
+        }
+        .credit::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: 15px;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 10px solid #dc3545;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 5px;
+        }
+        .message-date {
+            font-weight: bold;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .message-amount {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .debit .message-amount {
+            color: #28a745;
+        }
+        .credit .message-amount {
+            color: #dc3545;
+        }
+        .message-details {
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            margin-left: 10px;
+            display: inline-block;
+        }
+        .modification-indicator {
+            font-size: 14px;
+            margin-left: 5px;
+            vertical-align: middle;
+            cursor: help;
+        }
+        .edit-btn {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .view-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        .buttons {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .balance {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .balance.positive {
+            color: #28a745;
+        }
+        .balance.negative {
+            color: #dc3545;
+        }
+        .btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-debit {
+            background: linear-gradient(135deg, #00d2d3 0%, #54a0ff 100%);
+        }
+        .btn-credit {
+            background: linear-gradient(135deg,#ff6b6b 0%, #ee5a24 100%);
+        }
+        .customer-actions {
+            flex-shrink: 0;
+        }
+        .customer-actions .back-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        .customer-actions .back-link:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .transaction-details-modal {
+            max-width: 600px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+        .transaction-details-modal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 25px;
+        }
+        .transaction-details-modal .modal-body {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .transaction-details-modal .modal-footer {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-top: 2px solid #dee2e6;
+            padding: 25px;
+            border-radius: 0 0 10px 10px;
+        }
+        .transaction-details-modal .detail-row {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .transaction-details-modal .detail-row:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .transaction-details-modal .detail-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        .transaction-details-modal .detail-value {
+            color: #212529;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .transaction-details-modal .action-btn {
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 5px;
+        }
+        .transaction-details-modal .view-btn {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        .transaction-details-modal .view-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+        .transaction-details-modal .edit-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+        }
+        .transaction-details-modal .edit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,193,7,0.3);
+        }
+        .transaction-details-modal .delete-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .transaction-details-modal .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220,53,69,0.3);
+        }
+        .transaction-details-modal .btn-cancel {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .transaction-details-modal .btn-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+        }
+        .transaction-details-modal {
+            max-width: 600px;
+        }
+        .transaction-detail-section {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .modal-content.expanded .transaction-detail-section {
+            max-height: none;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+            flex: 0 0 120px;
+        }
+        .detail-value {
+            flex: 1;
+            text-align: right;
+            color: #666;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+        }
+        .close-modal {
+            max-width: 30px;
+            max-height: 30px;
+            color: rgb(180, 14, 14);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            text-align: center;
+        }
+        .close-modal:hover {
+            color: #ddd;
+        }
+        .transaction-modal .close-modal {
+            font-size: 16px;
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .transaction-modal .close-modal:hover {
+            color: #c82333;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .transaction-modal .close-modal:focus {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .modal-footer {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            text-align: right;
+            border-radius: 0 0 8px 8px;
+        }
+        .modal-footer button {
+            width: 60px;
+            height: 30px;
+            padding: 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            margin-left: 10px;
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-submit:hover, .btn-cancel:hover {
+            opacity: 0.9;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            header, main, .footer-section {
+                height: auto;
+                position: static;
+                overflow: visible;
+            }
+
+            html, body {
+                height: auto;
+                overflow: visible;
+            }
+
+            main {
+                padding: 20px;
+            }
+
+            .conversation-container {
+                padding: 10px;
+                gap: 15px;
+            }
+            .message-bubble {
+                max-width: 50%;
+            }
+            .customer-info h1 {
+                font-size: 24px;
+            }
+            .transaction-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
+            .transaction-details-modal {
+                max-width: 95%;
+            }
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .detail-label {
+                flex: none;
+                font-size: 14px;
+            }
+            .detail-value {
+                text-align: left;
+                font-size: 14px;
+            }
+            .modal-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="Barman Store Logo" style="height: 50px; width: auto;">
+        </div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('catalog') }}">Catalog</a>
+            <a href="{{ url_for('help') }}">Help</a>
+            <a href="{{ url_for('admin') }}" style="background-color: #28a745; color: white;">← Back to Admin</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="history-container">
+
+            <div class="customer-info">
+                <div class="customer-profile">
+                    <div class="customer-avatar">
+                        <span class="avatar-icon">{{ customer.first_name[0] if customer.first_name else '?' }}{{ customer.last_name[0] if customer.last_name else '' }}</span>
+                    </div>
+                    <div class="customer-details">
+                        <h1>{{ customer.first_name }} {{ customer.last_name }}</h1>
+                        <p class="customer-phone"><strong>📞</strong> {{ customer.phone or 'N/A' }}</p>
+                    </div>
+                </div>
+                <div class="customer-actions">
+                    <a href="{{ url_for('admin') }}" class="back-link">← Back to Admin Panel</a>
+                </div>
+            </div>
+
+            <div class="transactions-section">
+                <div class="conversation-container">
+                    {% if transactions %}
+                        {% for transaction in transactions %}
+                        <div class="message {{ 'debit-message' if transaction.type == 'debit' else 'credit-message' }}">
+                            <div class="message-bubble {{ transaction.type }}"
+                                 data-transaction-id="{{ transaction.id }}"
+                                 data-transaction-type="{{ transaction.type }}"
+                                 data-transaction-date="{% if transaction.date %}{{ transaction.date.strftime('%d %b %Y') if hasattr(transaction.date, 'strftime') else transaction.date }}{% else %}N/A{% endif %}"
+                                 data-transaction-amount="{{ "%.2f"|format(transaction.amount or transaction.total_amount or 0) }}"
+                                 data-transaction-description="{{ transaction.description or ('Order' if transaction.type == 'debit' else 'Payment') }}"
+                                 data-transaction-bill-no="{{ transaction.bill_no or '' }}"
+                                 data-transaction-status="{% if transaction.type == 'debit' %}{{ transaction.status or 'Pending' }}{% else %}{{ transaction.payment_method or 'N/A' }}{% endif %}"
+                                 data-transaction-source="{{ transaction.get('source', '') }}"
+                                 data-modification-reason="{{ transaction.get('modification_reason', '') }}"
+                                 onclick="openTransactionDetailsModal(this)">
+                                <div class="message-header">
+                                    <span class="message-date">
+                                        {% if transaction.date %}
+                                            {{ transaction.date.strftime('%d %b %Y') if hasattr(transaction.date, 'strftime') else transaction.date }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </span>
+                                    <span class="message-amount">₹{{ "%.2f"|format(transaction.amount or transaction.total_amount or 0) }}</span>
+                                </div>
+                                <div class="message-details">
+                                    <strong>{{ transaction.description or ('Order' if transaction.type == 'debit' else 'Payment') }}</strong><br>
+                                    {% if transaction.bill_no %}
+                                        <strong>Bill No:</strong> {{ transaction.bill_no }}<br>
+                                    {% endif %}
+                                    {% if transaction.get('modification_history') %}
+                                    {% for modification in transaction.modification_history %}
+                                    <br><em style="color: #ff6b35; font-weight: bold;">✏️ Modified {{ modification.timestamp.strftime('%d %b %Y') if hasattr(modification.timestamp, 'strftime') else modification.timestamp }}: {{ modification.reason }}</em>
+                                    {% endfor %}
+                                    {% elif transaction.get('last_modified') and transaction.get('modification_reason') %}
+                                    <br><em style="color: #ff6b35; font-weight: bold;">✏️ Modified {{ transaction.last_modified.strftime('%d %b %Y') if hasattr(transaction.last_modified, 'strftime') else transaction.last_modified }}: {{ transaction.modification_reason }}</em>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            No transactions found for this customer.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div class="footer-section">
+        <div class="history-container">
+            <div class="footer-row">
+                <div class="footer-buttons">
+                    <button onclick="openTransactionModal('debit')" class="btn btn-debit">➕ Add Debit</button>
+                    <button onclick="openTransactionModal('credit')" class="btn btn-credit">➕ Add Credit</button>
+                </div>
+                <div class="balance {{ 'positive' if (balance or 0) >= 0 else 'negative' }}">
+                    Balance: ₹{{ "%.2f"|format(balance or 0) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="modal transaction-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Transaction</h3>
+                <button class="close-modal" onclick="closeModal()" aria-label="Close Add Debit Card modal">&times;</button>
+            </div>
+            <form id="transactionForm" onsubmit="submitTransaction(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="transactionType" name="type">
+                    <input type="hidden" id="customerId" name="customer_id" value="{{ customer.id }}">
+
+                    <div class="form-group">
+                        <label for="amount">Amount (₹)</label>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
+                        <div class="error-message" id="amountError">Please enter a valid amount greater than 0.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" placeholder="Enter transaction description..." required></textarea>
+                        <div class="error-message" id="descriptionError">Description is required.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billNo">Bill Number (Optional)</label>
+                        <input type="text" id="billNo" name="bill_no" placeholder="Enter bill number if applicable">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transactionDate">Date</label>
+                        <input type="date" id="transactionDate" name="date" required>
+                        <div class="error-message" id="dateError">Please select a valid date.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" id="submitBtn">Add Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div id="transactionDetailsModal" class="modal" role="dialog" aria-labelledby="transactionModalTitle" aria-modal="true">
+        <div class="modal-content transaction-details-modal">
+            <div class="modal-header">
+                <h3 id="transactionModalTitle">Transaction Details</h3>
+                <button class="close-modal" onclick="closeTransactionDetailsModal()" aria-label="Close transaction details">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="transaction-detail-section">
+                    <div class="detail-row">
+                        <span class="detail-label">Date:</span>
+                        <span class="detail-value" id="detail-date"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value" id="detail-amount"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type:</span>
+                        <span class="detail-value" id="detail-type"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Description:</span>
+                        <span class="detail-value" id="detail-description"></span>
+                    </div>
+                    <div class="detail-row" id="detail-bill-row">
+                        <span class="detail-label">Bill No:</span>
+                        <span class="detail-value" id="detail-bill-no"></span>
+                    </div>
+                    <div class="detail-row" id="detail-status-row">
+                        <span class="detail-label" id="detail-status-label">Status:</span>
+                        <span class="detail-value" id="detail-status"></span>
+                    </div>
+                    <div class="detail-row" id="detail-modification-row" style="display: none;">
+                        <span class="detail-label">Modified:</span>
+                        <span class="detail-value" id="detail-modification-reason"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeTransactionDetailsModal()">Close</button>
+                    <div class="action-buttons" id="transactionActionButtons">
+                        <button type="button" id="viewFullDetailsBtn" class="action-btn view-btn" onclick="viewFullDetails()" title="View Full Details">📄</button>
+                        <button type="button" id="editTransactionBtn" class="action-btn edit-btn" style="display: none;">Edit</button>
+                        <button type="button" id="deleteTransactionBtn" class="action-btn delete-btn" style="display: none;">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTransactionType = '';
+
+        function viewTransaction(transactionId, type) {
+            // Placeholder for viewing transaction details
+            alert(`View ${type} transaction: ${transactionId}`);
+        }
+
+        function editTransaction(transactionId, type) {
+            // Placeholder for editing transaction
+            alert(`Edit ${type} transaction: ${transactionId}`);
+        }
+
+        function deleteTransaction(transactionId, type) {
+            // Placeholder for deleting transaction
+            if (confirm(`Are you sure you want to delete this ${type} transaction?`)) {
+                alert(`Delete ${type} transaction: ${transactionId}`);
+            }
+        }
+
+        function openTransactionModal(type) {
+            currentTransactionType = type;
+            const modal = document.getElementById('transactionModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const submitBtn = document.getElementById('submitBtn');
+            const transactionTypeInput = document.getElementById('transactionType');
+
+            // Set modal title and button text
+            if (type === 'debit') {
+                modalTitle.textContent = 'Add Debit Transaction';
+                submitBtn.textContent = 'Add Debit';
+                modalTitle.style.color = '#dc3545';
+            } else {
+                modalTitle.textContent = 'Add Credit Transaction';
+                submitBtn.textContent = 'Add Credit';
+                modalTitle.style.color = '#28a745';
+            }
+
+            // Set transaction type
+            transactionTypeInput.value = type;
+
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transactionDate').value = today;
+
+            // Clear form
+            document.getElementById('transactionForm').reset();
+            hideErrors();
+
+            // Show modal
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('transactionModal').style.display = 'none';
+            currentTransactionType = '';
+        }
+
+        function hideErrors() {
+            const errors = document.querySelectorAll('.error-message');
+            errors.forEach(error => error.style.display = 'none');
+        }
+
+        function showError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function validateForm() {
+            hideErrors();
+            let isValid = true;
+
+            // Validate amount
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (!amount || amount <= 0) {
+                showError('amount', 'Please enter a valid amount greater than 0.');
+                isValid = false;
+            }
+
+            // Validate description
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                showError('description', 'Description is required.');
+                isValid = false;
+            }
+
+            // Validate date
+            const date = document.getElementById('transactionDate').value;
+            if (!date) {
+                showError('date', 'Please select a valid date.');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        async function submitTransaction(event) {
+            event.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+
+            try {
+                const formData = new FormData(document.getElementById('transactionForm'));
+                const data = Object.fromEntries(formData);
+
+                // Convert amount to number
+                data.amount = parseFloat(data.amount);
+
+                const response = await fetch('/customer/add_transaction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(`Transaction added successfully!`);
+                    closeModal();
+                    // Reload the page to show updated transactions
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Failed to add transaction. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error adding transaction:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('transactionModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+                closeTransactionDetailsModal();
+            }
+        });
+
+        // Transaction Details Modal Functions
+        function openTransactionDetailsModal(element) {
+            const modal = document.getElementById('transactionDetailsModal');
+            const transactionId = element.getAttribute('data-transaction-id');
+            const transactionType = element.getAttribute('data-transaction-type');
+            const transactionDate = element.getAttribute('data-transaction-date');
+            const transactionAmount = element.getAttribute('data-transaction-amount');
+            const transactionDescription = element.getAttribute('data-transaction-description');
+            const transactionBillNo = element.getAttribute('data-transaction-bill-no');
+            const transactionStatus = element.getAttribute('data-transaction-status');
+            const transactionSource = element.getAttribute('data-transaction-source');
+            const modificationReason = element.getAttribute('data-modification-reason');
+
+            // Populate modal with transaction data
+            document.getElementById('detail-date').textContent = transactionDate;
+            document.getElementById('detail-amount').textContent = '₹' + transactionAmount;
+            document.getElementById('detail-type').textContent = transactionType.charAt(0).toUpperCase() + transactionType.slice(1);
+            document.getElementById('detail-description').textContent = transactionDescription;
+
+            // Handle bill number
+            const billRow = document.getElementById('detail-bill-row');
+            if (transactionBillNo) {
+                document.getElementById('detail-bill-no').textContent = transactionBillNo;
+                billRow.style.display = 'flex';
+            } else {
+                billRow.style.display = 'none';
+            }
+
+            // Handle status/method
+            const statusRow = document.getElementById('detail-status-row');
+            const statusLabel = document.getElementById('detail-status-label');
+            if (transactionType === 'debit') {
+                statusLabel.textContent = 'Status:';
+            } else {
+                statusLabel.textContent = 'Method:';
+            }
+            document.getElementById('detail-status').textContent = transactionStatus;
+            statusRow.style.display = 'flex';
+
+            // Handle modification reason
+            const modificationRow = document.getElementById('detail-modification-row');
+            if (modificationReason) {
+                document.getElementById('detail-modification-reason').textContent = modificationReason;
+                modificationRow.style.display = 'flex';
+            } else {
+                modificationRow.style.display = 'none';
+            }
+
+            // Set up action buttons
+            const viewBtn = document.getElementById('viewTransactionBtn');
+            const editBtn = document.getElementById('editTransactionBtn');
+            const deleteBtn = document.getElementById('deleteTransactionBtn');
+
+            viewBtn.href = `{{ url_for('view_customer_transaction', customer_id=customer.id, transaction_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', transactionId);
+
+            if (transactionSource === 'customer_transactions') {
+                editBtn.style.display = 'inline-block';
+                deleteBtn.style.display = 'inline-block';
+                editBtn.onclick = function() {
+                    window.location.href = `{{ url_for('edit_customer_transaction', customer_id=customer.id, transaction_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', transactionId);
+                };
+                deleteBtn.onclick = function() {
+                    if (confirm('Are you sure you want to delete this transaction?')) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `{{ url_for('delete_customer_transaction', customer_id=customer.id, transaction_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', transactionId);
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = 'csrf_token';
+                        csrfInput.value = '{{ csrf_token() }}';
+                        form.appendChild(csrfInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                };
+            } else {
+                editBtn.style.display = 'none';
+                deleteBtn.style.display = 'none';
+            }
+
+            // Show modal
+            modal.style.display = 'block';
+            modal.focus();
+
+            // Color code the modal based on transaction type
+            const modalContent = modal.querySelector('.modal-content');
+            if (transactionType === 'debit') {
+                modalContent.style.borderLeft = '4px solid #28a745';
+            } else {
+                modalContent.style.borderLeft = '4px solid #dc3545';
+            }
+        }
+
+        function closeTransactionDetailsModal() {
+            document.getElementById('transactionDetailsModal').style.display = 'none';
+        }
+
+        function viewFullDetails() {
+            // Expand modal to show additional details
+            const modalContent = document.querySelector('#transactionDetailsModal .modal-content');
+            const detailSection = document.querySelector('.transaction-detail-section');
+
+            // Toggle expanded view
+            if (modalContent.classList.contains('expanded')) {
+                modalContent.classList.remove('expanded');
+                detailSection.style.maxHeight = '';
+                document.getElementById('viewFullDetailsBtn').textContent = '📄';
+                document.getElementById('viewFullDetailsBtn').title = 'View Full Details';
+            } else {
+                modalContent.classList.add('expanded');
+                detailSection.style.maxHeight = 'none';
+                document.getElementById('viewFullDetailsBtn').textContent = '📖';
+                document.getElementById('viewFullDetailsBtn').title = 'Collapse Details';
+            }
+        }
+
+        // Close transaction details modal when clicking outside
+        document.getElementById('transactionDetailsModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeTransactionDetailsModal();
+            }
+        });
+    </script>
+</body>
+</html>

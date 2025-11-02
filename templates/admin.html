@@ -161,6 +161,157 @@
             border-radius: 4px;
             font-weight: bold;
         }
+
+        /* Customer tiles styling */
+        .customer-tiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .customer-tile {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .customer-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+        .customer-tile h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        .customer-tile p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .customer-tile .phone-icon {
+            color: #28a745;
+            margin-right: 5px;
+        }
+
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h4 {
+            margin: 0;
+            color: #333;
+        }
+        .close-modal {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-modal:hover {
+            color: #000;
+        }
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* Responsive design for billing tab */
+        @media (max-width: 768px) {
+            .billing-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-container {
+                position: relative;
+                min-width: auto;
+            }
+            .sort-controls {
+                justify-content: center;
+            }
+            .customer-stats {
+                flex-direction: column;
+            }
+            .stat-card {
+                min-width: auto;
+            }
+            .customer-table-container {
+                overflow-x: auto;
+            }
+            #customerTable {
+                min-width: 600px;
+            }
+            .pagination {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-container {
+                padding: 10px;
+            }
+            .billing-controls {
+                gap: 10px;
+            }
+            .action-card {
+                padding: 15px;
+            }
+            .customer-tile {
+                padding: 15px;
+            }
+        }
+
+        /* Balance styling */
+        .balance-positive {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .balance-zero {
+            color: #28a745;
+            font-weight: normal;
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -197,7 +348,6 @@
                 <button class="tab-button" onclick="showTab('purchases')">🛒 Purchase Register</button>
                 <button class="tab-button" onclick="showTab('billing')">💳 Billing</button>
                 <button class="tab-button" onclick="showTab('support')">🎧 Support</button>
-                <button class="tab-button" onclick="showTab('credit')">💰 Credit Management</button>
                 <button class="tab-button" onclick="showTab('overview')">📊 Overview</button>
             </div>
 
@@ -290,7 +440,7 @@
 
             <!-- Purchase Register Tab -->
             <div id="purchases" class="tab-content">
-                <h3>Purchase Register</h3>
+                <h3>Purchase Register & Reports</h3>
                 <div class="quick-actions">
                     <div class="action-card">
                         <h3>🛒 View Purchases</h3>
@@ -304,8 +454,8 @@
                     </div>
                     <div class="action-card">
                         <h3>📈 Purchase Reports</h3>
-                        <p>Analyze purchase trends</p>
-                        <a href="#">Coming Soon</a>
+                        <p>Advanced filtering, analytics & export</p>
+                        <a href="{{ url_for('purchase_register') }}">View Reports</a>
                     </div>
                 </div>
             </div>
@@ -313,25 +463,98 @@
             <!-- Billing Tab -->
             <div id="billing" class="tab-content">
                 <h3>Billing Management</h3>
-                <div class="quick-actions">
-                    <div class="action-card">
-                        <h3>📄 View Bills</h3>
-                        <p>Review all billing records</p>
-                        <a href="{{ url_for('view_bills') }}">View Bills</a>
+
+                <!-- Search Bar -->
+                <div class="billing-controls" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div class="search-container" style="flex: 1; min-width: 250px;">
+                        <input type="text" id="customerSearch" placeholder="Search customers by name or phone..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <span class="search-icon" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666;">🔍</span>
                     </div>
+                    <div class="sort-controls" style="display: flex; gap: 10px;">
+                        <select id="sortBy" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: white;">
+                            <option value="name">Sort by Name</option>
+                            <option value="phone">Sort by Phone</option>
+                            <option value="balance">Sort by Balance</option>
+                        </select>
+                        <button id="sortOrder" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer;">⬇️</button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" style="text-align: center; padding: 40px; display: none;">
+                    <div style="font-size: 18px; color: #666;">Loading customers...</div>
+                    <div style="margin-top: 10px;">⏳</div>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" style="text-align: center; padding: 40px; display: none; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24;">
+                    <div style="font-size: 18px; margin-bottom: 10px;">❌ Error loading customers</div>
+                    <div id="errorMessage">Please try again later.</div>
+                    <button onclick="loadCustomers()" style="margin-top: 15px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                </div>
+
+                <!-- Customer List -->
+                <div id="customerList" style="display: none;">
+                    <div class="customer-stats" style="display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div class="stat-card" style="flex: 1; min-width: 150px;">
+                            <div class="stat-number" id="totalCustomers">0</div>
+                            <div>Total Customers</div>
+                        </div>
+                        <div class="stat-card" style="flex: 1; min-width: 150px;">
+                            <div class="stat-number" id="totalBalance">₹0.00</div>
+                            <div>Total Outstanding</div>
+                        </div>
+                        <div class="stat-card" style="flex: 1; min-width: 150px;">
+                            <div class="stat-number" id="customersWithBalance">0</div>
+                            <div>With Balance</div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Table -->
+                    <div class="customer-table-container" style="overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <table id="customerTable" class="users-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <th style="padding: 15px; text-align: left; font-weight: 600; cursor: pointer;" onclick="sortTable('name')">Name ⬍</th>
+                                    <th style="padding: 15px; text-align: left; font-weight: 600; cursor: pointer;" onclick="sortTable('phone')">Phone ⬍</th>
+                                    <th style="padding: 15px; text-align: left; font-weight: 600; cursor: pointer;" onclick="sortTable('balance')">Current Balance ⬍</th>
+                                    <th style="padding: 15px; text-align: left; font-weight: 600;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerTableBody">
+                                <!-- Customer rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="pagination" style="display: flex; justify-content: center; margin-top: 20px; gap: 10px; flex-wrap: wrap;">
+                        <!-- Pagination buttons will be populated here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" style="text-align: center; padding: 40px; color: #6c757d; display: none;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">👥</div>
+                        <div style="font-size: 18px; margin-bottom: 10px;">No customers found</div>
+                        <div>Customers will appear here once they register and place orders.</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions" style="margin-top: 30px;">
                     <div class="action-card">
-                        <h3>📦 View Orders</h3>
-                        <p>View and manage customer orders</p>
-                        <a href="{{ url_for('view_orders') }}">View Orders</a>
+                        <h3>📋 View Bills</h3>
+                        <p>Manage customer bills and orders</p>
+                        <a href="{{ url_for('view_orders') }}">View Bills</a>
                     </div>
                     <div class="action-card">
                         <h3>➕ Create Bill</h3>
-                        <p>Generate new bills</p>
-                        <a href="{{ url_for('create_bill') }}">Create Bill</a>
+                        <p>Create new bills for customers</p>
+                        <a href="#">Coming Soon</a>
                     </div>
                     <div class="action-card">
                         <h3>📊 Billing Reports</h3>
-                        <p>Analyze billing data</p>
+                        <p>View billing statistics and reports</p>
                         <a href="#">Coming Soon</a>
                     </div>
                 </div>
@@ -359,59 +582,7 @@
                 </div>
             </div>
 
-            <!-- Credit Management Tab -->
-            <div id="credit" class="tab-content">
-                <h3>Credit Management</h3>
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-number">0</div>
-                        <div>Active Credits</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">₹0</div>
-                        <div>Total Credit Amount</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">0</div>
-                        <div>Overdue Credits</div>
-                    </div>
-                </div>
 
-                <div class="quick-actions">
-                    <div class="action-card">
-                        <h3>💰 Grant Credit</h3>
-                        <p>Assign credit limit to customers</p>
-                        <a href="#" onclick="alert('Credit management feature coming soon!')">Grant Credit</a>
-                    </div>
-                    <div class="action-card">
-                        <h3>📊 Credit Reports</h3>
-                        <p>View credit usage and payments</p>
-                        <a href="#" onclick="alert('Credit reports feature coming soon!')">View Reports</a>
-                    </div>
-                    <div class="action-card">
-                        <h3>⚠️ Credit Alerts</h3>
-                        <p>Monitor credit limits and payments</p>
-                        <a href="#" onclick="alert('Credit alerts feature coming soon!')">View Alerts</a>
-                    </div>
-                    <div class="action-card">
-                        <h3>📋 Credit History</h3>
-                        <p>Track credit transactions</p>
-                        <a href="#" onclick="alert('Credit history feature coming soon!')">View History</a>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
-                    <h4 style="margin-top: 0; color: #28a745;">💡 Credit Management Features</h4>
-                    <ul style="color: #666; line-height: 1.6;">
-                        <li><strong>Credit Limits:</strong> Set maximum credit amounts for customers</li>
-                        <li><strong>Payment Tracking:</strong> Monitor credit payments and outstanding balances</li>
-                        <li><strong>Due Date Alerts:</strong> Automatic notifications for upcoming payments</li>
-                        <li><strong>Credit Reports:</strong> Detailed reports on credit usage and history</li>
-                        <li><strong>Risk Assessment:</strong> Evaluate customer creditworthiness</li>
-                    </ul>
-                    <p style="color: #666; margin-bottom: 0;"><em>This feature is currently under development and will be available soon.</em></p>
-                </div>
-            </div>
 
             <!-- Overview Tab -->
             <div id="overview" class="tab-content">
@@ -452,6 +623,13 @@
     </main>
 
     <script>
+        let customers = [];
+        let filteredCustomers = [];
+        let currentPage = 1;
+        const itemsPerPage = 50;
+        let sortColumn = 'name';
+        let sortDirection = 'asc';
+
         function showTab(tabName) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
@@ -466,7 +644,255 @@
 
             // Add active class to clicked button
             event.target.classList.add('active');
+
+            // Load customers if billing tab is selected
+            if (tabName === 'billing') {
+                loadCustomers();
+            }
         }
+
+        async function loadCustomers() {
+            const loadingState = document.getElementById('loadingState');
+            const errorState = document.getElementById('errorState');
+            const customerList = document.getElementById('customerList');
+
+            // Show loading state
+            loadingState.style.display = 'block';
+            errorState.style.display = 'none';
+            customerList.style.display = 'none';
+
+            try {
+                const response = await fetch('/admin/customers');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                customers = data.customers || [];
+                filteredCustomers = [...customers];
+
+                // Update stats
+                updateStats();
+
+                // Apply initial sorting
+                sortCustomers();
+
+                // Render table
+                renderTable();
+
+                // Hide loading, show content
+                loadingState.style.display = 'none';
+                customerList.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading customers:', error);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message || 'Failed to load customers. Please try again.';
+            }
+        }
+
+        function updateStats() {
+            const totalCustomers = customers.length;
+            const totalBalance = customers.reduce((sum, customer) => sum + (customer.balance || 0), 0);
+            const customersWithBalance = customers.filter(customer => (customer.balance || 0) > 0).length;
+
+            document.getElementById('totalCustomers').textContent = totalCustomers;
+            document.getElementById('totalBalance').textContent = `₹${totalBalance.toFixed(2)}`;
+            document.getElementById('customersWithBalance').textContent = customersWithBalance;
+        }
+
+        function sortCustomers() {
+            filteredCustomers.sort((a, b) => {
+                let aVal, bVal;
+
+                switch (sortColumn) {
+                    case 'name':
+                        aVal = `${a.first_name || ''} ${a.last_name || ''}`.trim().toLowerCase();
+                        bVal = `${b.first_name || ''} ${b.last_name || ''}`.trim().toLowerCase();
+                        break;
+                    case 'phone':
+                        aVal = (a.phone || '').toLowerCase();
+                        bVal = (b.phone || '').toLowerCase();
+                        break;
+                    case 'balance':
+                        aVal = a.balance || 0;
+                        bVal = b.balance || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            sortCustomers();
+            renderTable();
+            updateSortIndicators();
+        }
+
+        function updateSortIndicators() {
+            const headers = document.querySelectorAll('#customerTable th');
+            headers.forEach(header => {
+                const text = header.textContent.replace(/[⬍⬆⬇]/g, '').trim();
+                header.textContent = text + ' ⬍';
+            });
+
+            const activeHeader = document.querySelector(`#customerTable th[onclick*="${sortColumn}"]`);
+            if (activeHeader) {
+                const text = activeHeader.textContent.replace(/[⬍⬆⬇]/g, '').trim();
+                activeHeader.textContent = text + (sortDirection === 'asc' ? ' ⬆' : ' ⬇');
+            }
+        }
+
+        function filterCustomers() {
+            const searchTerm = document.getElementById('customerSearch').value.toLowerCase().trim();
+            filteredCustomers = customers.filter(customer => {
+                const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim().toLowerCase();
+                const phone = (customer.phone || '').toLowerCase();
+                return fullName.includes(searchTerm) || phone.includes(searchTerm);
+            });
+
+            sortCustomers();
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('customerTableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredCustomers.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // Pagination
+            const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageCustomers = filteredCustomers.slice(startIndex, endIndex);
+
+            // Render rows
+            tbody.innerHTML = pageCustomers.map((customer, index) => {
+                const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+                const balance = customer.balance || 0;
+                const balanceClass = balance > 0 ? 'balance-positive' : 'balance-zero';
+                const balanceText = balance > 0 ? `₹${balance.toFixed(2)}` : '₹0.00';
+
+                return `
+                    <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                        <td style="padding: 12px; border-bottom: 1px solid #ddd;">${fullName || 'N/A'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #ddd;">${customer.phone || 'N/A'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #ddd;">
+                            <span class="${balanceClass}" style="font-weight: bold; color: ${balance > 0 ? '#dc3545' : '#28a745'};">${balanceText}</span>
+                        </td>
+                        <td style="padding: 12px; border-bottom: 1px solid #ddd;">
+                            <button onclick="viewCustomerDetails('${customer.id}')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">View</button>
+                            <button onclick="viewCustomerOrders('${customer.id}')" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Orders</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render pagination
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="changePage(${currentPage - 1})" style="padding: 8px 12px; margin: 0 2px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px;">« Previous</button>`;
+            }
+
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                paginationHTML += `<button onclick="changePage(1)" style="padding: 8px 12px; margin: 0 2px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px;">1</button>`;
+                if (startPage > 2) {
+                    paginationHTML += `<span style="padding: 8px 12px; margin: 0 2px;">...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentPage;
+                paginationHTML += `<button onclick="changePage(${i})" style="padding: 8px 12px; margin: 0 2px; border: 1px solid #ddd; background: ${isActive ? '#007bff' : 'white'}; color: ${isActive ? 'white' : 'black'}; cursor: pointer; border-radius: 4px; ${isActive ? 'font-weight: bold;' : ''}">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<span style="padding: 8px 12px; margin: 0 2px;">...</span>`;
+                }
+                paginationHTML += `<button onclick="changePage(${totalPages})" style="padding: 8px 12px; margin: 0 2px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px;">${totalPages}</button>`;
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="changePage(${currentPage + 1})" style="padding: 8px 12px; margin: 0 2px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px;">Next »</button>`;
+            }
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function viewCustomerDetails(customerId) {
+            // Redirect to customer history page
+            window.location.href = `/customer/${customerId}/history`;
+        }
+
+        function viewCustomerOrders(customerId) {
+            // Placeholder for customer orders
+            alert(`View orders for customer ID: ${customerId}`);
+        }
+
+        // Event listeners
+        document.getElementById('customerSearch').addEventListener('input', filterCustomers);
+        document.getElementById('sortBy').addEventListener('change', function() {
+            sortColumn = this.value;
+            sortCustomers();
+            renderTable();
+            updateSortIndicators();
+        });
+        document.getElementById('sortOrder').addEventListener('click', function() {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            sortCustomers();
+            renderTable();
+            updateSortIndicators();
+        });
+
+        // Initialize sort indicators
+        updateSortIndicators();
+
     </script>
+
 </body>
 </html>

@@ -47,7 +47,7 @@
             <label for="brand">Brand:</label>
             <input type="text" id="brand" name="brand" placeholder="e.g., Apple, Nike, Samsung"><br>
 
-            <label for="weight">Weight:</label>
+            <label for="weight">Specification:</label>
             <input type="text" id="weight" name="weight" placeholder="e.g., 1.5 kg or 500 g"><br>
 
             <label for="price">Price (₹):</label>
@@ -55,6 +55,12 @@
 
             <label for="stock_quantity">Stock Quantity:</label>
             <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="0"><br>
+
+            <label for="hsn">HSN Code:</label>
+            <input type="text" id="hsn" name="hsn" placeholder="e.g., 12345678" oninput="searchHSN(this.value)" list="hsnList">
+            <datalist id="hsnList">
+                <!-- Will be populated by JavaScript -->
+            </datalist><br>
 
             <label for="sku">SKU (Stock Keeping Unit):</label>
             <input type="text" id="sku" name="sku" readonly placeholder="Auto-generated"><br>
@@ -97,11 +103,83 @@
             document.getElementById('sku').value = sku;
         }
 
+        function searchHSN(hsnCode) {
+            if (hsnCode.length < 2) return;
+
+            fetch(`/api/search_hsn/${hsnCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.product) {
+                        // Auto-fill product details based on HSN
+                        if (confirm(`Found product with HSN ${hsnCode}: "${data.product.name}". Fill product details?`)) {
+                            document.getElementById('name').value = data.product.name;
+                            document.getElementById('brand').value = data.product.brand || '';
+                            document.getElementById('category').value = data.product.category || 'General';
+                            document.getElementById('weight').value = data.product.weight || '';
+                            document.getElementById('price').value = data.product.price || '';
+                            document.getElementById('stock_quantity').value = data.product.stock_quantity || 0;
+                            generateSKU();
+                        }
+                    }
+                })
+                .catch(error => console.error('Error searching HSN:', error));
+        }
+
+        function searchProductByName(productName) {
+            if (productName.length < 3) return;
+
+            const brand = document.getElementById('brand').value;
+            const category = document.getElementById('category').value;
+
+            fetch(`/api/search_product?name=${encodeURIComponent(productName)}&brand=${encodeURIComponent(brand)}&category=${encodeURIComponent(category)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.hsn && !document.getElementById('hsn').value) {
+                        // Suggest HSN code if field is empty
+                        if (confirm(`Suggested HSN code for "${productName}": ${data.hsn}. Use this HSN code?`)) {
+                            document.getElementById('hsn').value = data.hsn;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error searching product:', error));
+        }
+
+        function populateHSNDatalist() {
+            fetch('/api/hsn_codes')
+                .then(response => response.json())
+                .then(data => {
+                    const datalist = document.getElementById('hsnList');
+                    datalist.innerHTML = '';
+                    data.hsn_codes.forEach(hsn => {
+                        const option = document.createElement('option');
+                        option.value = hsn;
+                        datalist.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading HSN codes:', error));
+        }
+
         // Generate SKU when relevant fields change
         document.getElementById('brand').addEventListener('input', generateSKU);
         document.getElementById('name').addEventListener('input', generateSKU);
         document.getElementById('weight').addEventListener('input', generateSKU);
         document.getElementById('price').addEventListener('input', generateSKU);
+
+        // Search for HSN when product details change
+        document.getElementById('name').addEventListener('input', function() {
+            searchProductByName(this.value);
+        });
+        document.getElementById('brand').addEventListener('input', function() {
+            searchProductByName(document.getElementById('name').value);
+        });
+        document.getElementById('category').addEventListener('change', function() {
+            searchProductByName(document.getElementById('name').value);
+        });
+
+        // Initialize HSN datalist on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            populateHSNDatalist();
+        });
     </script>
 </body>
 </html>

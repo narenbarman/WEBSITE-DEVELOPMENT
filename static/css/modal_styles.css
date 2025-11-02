@@ -1,0 +1,226 @@
+/* Modal styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: none;
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 2% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.transaction-details-modal {
+    max-width: 600px;
+}
+.transaction-detail-section {
+    padding: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.modal-content.expanded .transaction-detail-section {
+    max-height: none;
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+.detail-row:last-child {
+    border-bottom: none;
+}
+.detail-label {
+    font-weight: bold;
+    color: #333;
+    flex: 0 0 120px;
+}
+.detail-value {
+    flex: 1;
+    text-align: right;
+    color: #666;
+}
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+.modal-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 {
+    margin: 0;
+}
+.close-modal {
+    max-width: 30px;
+    max-height: 30px;
+    color: rgb(180, 14, 14);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-align: center;
+}
+.close-modal:hover {
+    color: #ddd;
+}
+.transaction-modal .close-modal {
+    font-size: 16px;
+    color: #dc3545;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.transaction-modal .close-modal:hover {
+    color: #c82333;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.transaction-modal .close-modal:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+.modal-footer {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+    border-radius: 0 0 8px 8px;
+}
+.modal-footer button {
+    width: 60px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    background-color: #007bff;
+    color: white;
+    margin-left: 10px;
+}
+.btn-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+.btn-submit {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+.btn-submit:hover, .btn-cancel:hover {
+    opacity: 0.9;
+}
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+.action-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    background-color: #007bff;
+    color: white;
+    margin-left: 10px;
+    display: inline-block;
+}
+.edit-btn {
+    background-color: #ffc107;
+    color: #212529;
+}
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+}
+.view-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Responsive design for modals */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+    .transaction-details-modal {
+        max-width: 95%;
+    }
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .detail-label {
+        flex: none;
+        font-size: 14px;
+    }
+    .detail-value {
+        text-align: left;
+        font-size: 14px;
+    }
+    .modal-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .action-buttons {
+        justify-content: center;
+    }
+}
